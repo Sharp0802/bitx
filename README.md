@@ -33,7 +33,10 @@ bits! {
 }
 ```
 
-See [docs.rs](https://docs.rs/bitx/latest/bitx) for more information.
+Note that **Big-Endian / MSB-0** is used.
+
+See [docs.rs](https://docs.rs/bitx/latest/bitx/macro.bits.html)
+for more information.
 
 ## License
 
