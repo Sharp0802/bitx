@@ -6,6 +6,8 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+description = "proc-macro stubs for `bitx` crate"
+
 [lib]
 proc-macro = true
 
