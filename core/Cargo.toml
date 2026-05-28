@@ -1,0 +1,21 @@
+[package]
+name = "bitx"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+description = "More ergonomic way to deal with bitfield-like struct."
+documentation = "https://docs.rs/bitx"
+categories = ["no-std", "no-std::no-alloc", "rust-patterns"]
+
+[dependencies]
+bitx-macros.workspace = true
+
+[dev-dependencies]
+trybuild.workspace = true
+
+[lints]
+workspace = true
+
