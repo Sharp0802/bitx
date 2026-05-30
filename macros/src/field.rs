@@ -92,7 +92,7 @@ impl Type {
 
     pub fn reader(&self, offset: Offset) -> TokenStream {
         const E_BIG_UNALIGNED: &str =
-            "unaligned nested types cannot exceed 128 bits";
+            "bit-offseted field cannot exceed 128 bits";
 
         match self {
             Self::Literal {
