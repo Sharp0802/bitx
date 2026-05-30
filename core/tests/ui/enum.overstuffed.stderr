@@ -1,0 +1,5 @@
+error: enum is overstuffed
+ --> tests/ui/enum.overstuffed.rs:4:14
+  |
+4 |     pub enum Overstuffed: 0.2 {
+  |              ^^^^^^^^^^^
