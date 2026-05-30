@@ -1,17 +1,290 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream, Literal};
 use quote::{quote, ToTokens};
-use syn::parse::{Parse, ParseStream};
-use syn::{parse_quote, Attribute, Ident, Token, Type, Visibility};
+use syn::parse::ParseStream;
+use syn::{Attribute, Ident, Token, Visibility};
 
 use crate::lit;
 use crate::off::Offset;
 
+#[inline]
+fn read_mask(
+    off_bytes: impl ToTokens,
+    read_bytes: impl ToTokens,
+    mask_bytes: impl ToTokens,
+    mask: syn::Type
+) -> TokenStream {
+    quote! {
+        {
+            let from = self.0
+                .split_at(#off_bytes).1
+                .split_at(#read_bytes).0;
+            let mut buffer = [0u8; #mask_bytes];
+            buffer
+                .split_at_mut(#mask_bytes - #read_bytes).1
+                .copy_from_slice(from);
+            <#mask>::from_be_bytes(buffer)
+        }
+    }
+}
+
+pub enum Type {
+    Literal {
+        bits: usize,
+        mask_bits: usize,
+        mask: syn::Type,
+    },
+    Aligned(syn::Type),
+    Unaligned(syn::Type),
+}
+
+impl Type {
+    pub fn parse(
+        input: &ParseStream,
+        name: &Ident,
+        offset: Offset,
+        bound: Offset,
+    ) -> syn::Result<Self> {
+        let raw: syn::Type = input.parse()?;
+        
+        // NOTE: custom nested type cannot be check at here;
+        //       a detour using `Bits` trait is required.
+        //       See `Field::assert`.
+        
+        if let Some(bits) = lit::size_of(&raw) {
+            let total = offset.offset_bit(bits);
+
+            if total > bound {
+                return Err(input.error(&format!(
+                    "field `{}` exceeds struct bounds",
+                    name.to_string(),
+                )));
+            }
+
+            let bytes = total.bits().div_ceil(8);
+            let mask_bytes = bytes.next_power_of_two();
+            let mask_bits = mask_bytes * 8;
+
+            let Some(mask) = lit::with_bits(mask_bits) else {
+                return Err(input.error(&format!(
+                    "unaligned field `{}` cannot be \
+                     larger than 128 bits",
+                    name.to_string(),
+                )));
+            };
+
+            Ok(Self::Literal {
+                bits,
+                mask_bits,
+                mask,
+            })
+        } else if offset.bit == 0 {
+            Ok(Self::Aligned(raw))
+        } else {
+            Ok(Self::Unaligned(raw))
+        }
+    }
+
+    pub fn ret_ty(&self) -> syn::Type {
+        match self {
+            Self::Literal { bits: 1, .. } => lit::ty("bool"),
+            Self::Literal { mask, .. } => mask.clone(),
+            Self::Aligned(custom) => custom.clone(),
+            Self::Unaligned(custom) => custom.clone(),
+        }
+    }
+
+    pub fn reader(&self, offset: Offset) -> TokenStream {
+        const E_BIG_UNALIGNED: &str =
+            "unaligned nested types cannot exceed 128 bits";
+        
+        match self {
+            Self::Literal {
+                bits,
+                mask_bits,
+                mask,
+            } => {
+                let off_bytes = offset.byte;
+                let upper_bound_bits = offset.bit + bits;
+                let read_bytes = upper_bound_bits.div_ceil(8);
+                let read_bits = read_bytes * 8;
+                let mask_bytes = mask_bits / 8;
+
+                let lpad_bits = read_bits - upper_bound_bits;
+                let rpad_bits = mask_bits - bits;
+
+                let lpad = Literal::usize_unsuffixed(lpad_bits);
+                let rpad = Literal::usize_unsuffixed(rpad_bits);
+                
+                let epilogue = if *bits == 1 {
+                    quote! { val == 1 }
+                } else {
+                    quote! { val }
+                };
+
+                let read = read_mask(
+                    off_bytes,
+                    read_bytes,
+                    mask_bytes,
+                    mask.clone()
+                );
+
+                quote! {
+                    let mut val = #read;
+                    val >>= #lpad;
+                    val &= #mask::MAX >> #rpad;
+                    #epilogue
+                }
+            }
+            Self::Aligned(ty) => {
+                let off_byte = offset.byte;
+                let off_bit = Literal::usize_unsuffixed(offset.bit);
+
+                let read = read_mask(
+                    off_byte,
+                    Ident::new("SIZE", Span::call_site()),
+                    16usize,
+                    lit::ty("u128")
+                );
+
+                let t32 = lit::ty("u32");
+                let tsize = lit::ty("usize");
+                quote! {
+                    type Mask = <#ty as ::bitx::Bits>::Mask;
+
+                    const BITS: #t32 = <#ty as ::bitx::Bits>::BITS;
+                    const MASK: Mask = Mask::MAX>>(Mask::BITS - BITS);
+                    const SIZE: #tsize =
+                        (#off_bit + BITS as #tsize).div_ceil(8);
+
+                    const _: () = assert!(
+                        BITS % 8 == 0 || SIZE <= 16,
+                        #E_BIG_UNALIGNED,
+                    );
+
+                    if BITS % 8 == 0 {
+                        let from = self.0
+                            .split_at(#off_byte).1
+                            .split_at(SIZE).0;
+                        
+                        let mut buf = [0u8; SIZE];
+                        buf.copy_from_slice(from);
+                        
+                        #ty::from_array(buf)
+                    } else {
+                        let mut val = #read;
+                        val >>= (SIZE as #t32 * 8) - (#off_bit + BITS);
+                        let val = (val as Mask) & MASK;
+
+                        #ty::__from_mask(val)
+                    }
+                }
+            }
+            Self::Unaligned(ty) => {
+                let off_byte = offset.byte;
+                let off_bit = Literal::usize_unsuffixed(offset.bit);
+
+                let read = read_mask(
+                    off_byte,
+                    Ident::new("SIZE", Span::call_site()),
+                    16usize,
+                    lit::ty("u128"),
+                );
+
+                let t32 = lit::ty("u32");
+                let tsize = lit::ty("usize");
+                quote! {
+                    type Mask = <#ty as ::bitx::Bits>::Mask;
+
+                    const BITS: #t32 = <#ty as ::bitx::Bits>::BITS;
+                    const MASK: Mask = Mask::MAX>>(Mask::BITS - BITS);
+                    const SIZE: #tsize =
+                        (#off_bit + BITS as #tsize).div_ceil(8);
+                    
+                    const _: () = assert!(
+                        SIZE <= 16,
+                        #E_BIG_UNALIGNED
+                    );
+
+                    let mut val = #read;
+                    val >>= (SIZE as #t32 * 8) - (#off_bit + BITS);
+                    let val = (val as Mask) & MASK;
+
+                    #ty::__from_mask(val)
+                }
+            }
+        }
+    }
+
+} 
+
+
 pub struct Field {
-    pub attrs: Vec<Attribute>,
-    pub off: Offset,
-    pub vis: Visibility,
-    pub name: Ident,
-    pub ty: Type,
+    attrs: Vec<Attribute>,
+    offset: Offset,
+    vis: Visibility,
+    name: Ident,
+    ty: Type,
+}
+
+impl Field {
+    pub fn parse(
+        input: ParseStream,
+        bound: Offset,
+    ) -> syn::Result<Self> {
+        let attrs = input.call(Attribute::parse_outer)?;
+
+        let offset: Offset = input.parse()?;
+
+        let vis: Visibility = input.parse()?;
+        let name: Ident = input.parse()?;
+
+        if offset >= bound {
+            return Err(input.error(&format!(
+                "offset of field `{}` exceeds struct bounds",
+                name.to_string(),
+            )));
+        }
+
+        let _ = input.parse::<Token![:]>()?;
+
+        let ty: Type = Type::parse(
+            &input,
+            &name,
+            offset,
+            bound
+        )?;
+
+        Ok(Self {
+            attrs,
+            offset,
+            vis,
+            name,
+            ty,
+        })
+    }
+
+    pub fn assert(&self, size: Offset, stream: &mut TokenStream) {
+        if let Type::Literal { .. } = &self.ty {
+            // NOTE: already checked before when it parsed
+            return;
+        }
+        
+        let err = format!(
+            "field `{}` exceeds struct bounds",
+            self.name.to_string(),
+        );
+
+        // SAFETY: `size` always greater than `off`; See `parse`.
+        let max = Literal::usize_unsuffixed(
+            size.bits() - self.offset.bits()
+        );
+        
+        let ty = self.ty.ret_ty();
+
+        stream.extend(quote! {
+            assert!(<#ty as ::bitx::Bits>::BITS <= #max, #err);
+        });
+    }
 }
 
 impl ToTokens for Field {
@@ -20,150 +293,19 @@ impl ToTokens for Field {
     }
 
     fn to_token_stream(&self) -> TokenStream {
-        let off = self.off.byte;
-        let bit_off = self.off.bit;
-
         let attrs = &self.attrs;
         let name = &self.name;
         let vis = &self.vis;
-        let ty = &self.ty;
+        
+        let stub = self.ty.reader(self.offset);
+        let ret_ty = self.ty.ret_ty();
 
-        let t32: Type = parse_quote!(::core::primitive::u32);
-        let t128: Type = parse_quote!(::core::primitive::u128);
-        let tsize: Type = parse_quote!(::core::primitive::usize);
-
-        if let Some(bits) = lit::size_of(&self.ty) {
-            // NOTE: if type is literal (u1, u2, ..., u128).
-            let size = (bit_off + bits).div_ceil(8);
-            let base = size.next_power_of_two();
-
-            let Some(ty) = lit::with_bits(base * 8) else {
-                return quote! {
-                    compile_error!(
-                        "unaligned extraction is not supported \
-                         for sizes larger than 128-bit"
-                    )
-                };
-            };
-
-            let shr = u32::try_from(size * 8 - bit_off - bits).unwrap();
-            let mask_shr = u32::try_from(base * 8 - bits).unwrap();
-
-            let ret: Type = if bits == 1 {
-                parse_quote!(::core::primitive::bool)
-            } else {
-                ty.clone()
-            };
-
-            let epi = if bits == 1 {
-                quote! { val == 1 }
-            } else {
-                quote! { val }
-            };
-
-            quote! {
-                #(#attrs)*
-                #vis const fn #name(&self) -> #ret {
-                    let mut val = {
-                        let mut buf = [0u8; #base];
-
-                        // let from = self.0[#off..(#off+#size)]
-                        let from = self.0
-                            .split_at(#off).1
-                            .split_at(#size).0;
-
-                        // buf[(#base-#size)..].copy_from_slice(...)
-                        buf
-                            .split_at_mut(#base - #size).1
-                            .copy_from_slice(from);
-
-                        <#ty>::from_be_bytes(buf)
-                    };
-                    val >>= #shr;
-                    val &= #ty::MAX >> #mask_shr;
-
-                    #epi
-                }
-            }
-        } else if bit_off == 0 {
-            // NOTE: or it's aligned.
-            quote! {
-                #(#attrs)*
-                #vis const fn #name(self) -> #ty {
-                    const BITS: #t32   = <#ty as ::bitx::Bits>::BITS;
-                    const SIZE: #tsize = (BITS as #tsize + 7) / 8;
-
-                    unsafe {
-                        self.0.as_ptr()
-                            .add(#off)
-                            .cast::<#ty>()
-                            .read_unaligned()
-                    }
-                }
-            }
-        } else {
-            let bit_off32 = u32::try_from(bit_off).unwrap();
-
-            // NOTE: otherwise: must be smaller than 128-bit.
-            quote! {
-                #(#attrs)*
-                #vis const fn #name(&self) -> #ty {
-                    type M = <#ty as ::bitx::Bits>::Mask;
-
-                    const BITS  : #t32   = <#ty as ::bitx::Bits>::BITS;
-                    const SIZE32: #t32   = (#bit_off32 + BITS + 7) / 8;
-                    const SIZE  : #tsize = SIZE32 as #tsize;
-
-                    const MASK: M = M::MAX >> (M::BITS - BITS);
-
-                    const _: () = assert!(
-                        SIZE <= 16,
-                        "unaligned nested types cannot exceed 128-bit",
-                    );
-
-                    let mut val: #t128 = {
-                        let mut buf = [0u8; 16usize];
-
-                        // let from = self.0[#off..(#off+SIZE)]
-                        let from = self.0
-                            .split_at(#off).1
-                            .split_at(SIZE).0;
-
-                        // buf[(16-SIZE)..].copy_from_slice(..)
-                        buf
-                            .split_at_mut(16 - SIZE).1
-                            .copy_from_slice(from);
-
-                        #t128::from_be_bytes(buf)
-                    };
-                    val >>= (SIZE32 * 8) - (#bit_off32 + BITS);
-                    let val = (val as M) & MASK;
-
-                    #ty::__from_mask(val)
-                }
+        quote! {
+            #(#attrs)*
+            #vis const fn #name(&self) -> #ret_ty {
+                #stub
             }
         }
     }
 }
 
-impl Parse for Field {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let attrs = input.call(Attribute::parse_outer)?;
-
-        let off: Offset = input.parse()?;
-        let vis: Visibility = input.parse()?;
-        let name: Ident = input.parse()?;
-
-        let _ = input.parse::<Token![:]>()?;
-
-        let ty: Type = input.parse()?;
-
-        Ok(Self {
-            attrs,
-            off,
-            vis,
-            name,
-            ty,
-        })
-    }
-}

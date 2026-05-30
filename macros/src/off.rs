@@ -1,10 +1,24 @@
 use syn::parse::{Parse, ParseStream};
 use syn::{Error, LitFloat, LitInt, Result, Token};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Offset {
     pub byte: usize,
     pub bit: usize,
+}
+
+impl Offset {
+    pub const fn bits(self) -> usize {
+        self.byte * 8 + self.bit
+    }
+
+    pub const fn offset_bit(self, v: usize) -> Self {
+        let bits = self.bits() + v;
+        Self {
+            byte: bits / 8,
+            bit: bits % 8,
+        }
+    }
 }
 
 impl Parse for Offset {

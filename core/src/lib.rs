@@ -20,7 +20,6 @@
 ///
 /// bits! {
 ///     /// Optional documentation and attributes for the struct
-///     #[derive(Clone, Copy)]
 ///     // Total size in `byte.bit` notation (4.0 = 4 bytes / 32 bits)
 ///     pub struct Header: 4.4 {
 ///         /// Flag indicating active status

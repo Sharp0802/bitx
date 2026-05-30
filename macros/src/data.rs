@@ -1,144 +1,331 @@
 use crate::field::Field;
+use crate::variant::Variant;
 use crate::lit;
 use crate::off::Offset;
-use proc_macro2::TokenStream;
+use proc_macro2::{TokenStream, Span, Literal};
 use quote::{quote, ToTokens};
 use syn::parse::{Parse, ParseStream};
 use syn::punctuated::Punctuated;
-use syn::{parse_quote, Attribute, Ident, Token, Type, Visibility};
+use syn::token::Pound;
+use syn::{Attribute, Ident, Token, Visibility};
 
-pub struct Struct {
+pub enum Body {
+    Struct(Punctuated<Field, Token![,]>),
+    Enum {
+        variants: Punctuated<Variant, Token![,]>,
+        sealed: bool,
+    },
+}
+
+pub struct Data {
     attrs: Vec<Attribute>,
     vis: Visibility,
     name: Ident,
-    fields: Punctuated<Field, Token![,]>,
-    bits: usize,
+    body: Body,
+    size: Offset,
 }
 
-impl ToTokens for Struct {
-    fn to_tokens(&self, tokens: &mut TokenStream) {
-        let bits = self.bits;
-        let size = bits.div_ceil(8);
-
-        let bits32 = u32::try_from(bits).unwrap();
-
-        let fields = self.fields.iter();
+impl Data {
+    fn stub_decl(&self) -> TokenStream {
         let attrs = &self.attrs;
         let name = &self.name;
         let vis = &self.vis;
 
-        let hash = quote! { # };
-        let t8: Type = parse_quote!(::core::primitive::u8);
-        let t32: Type = parse_quote!(::core::primitive::u32);
-        let tsize: Type = parse_quote!(::core::primitive::usize);
+        let h = Pound::default();
+        let t8 = lit::ty("u8");
 
-        // - DEFINITION ------
-        tokens.extend(quote! {
-            #(#attrs)*
-            #hash [repr(C)]
-            #vis struct #name([#t8; #size]);
+        if let Body::Enum { variants, .. } = &self.body {
+            let mask_bits = 8 * self.size
+                .bits()
+                .div_ceil(8)
+                .next_power_of_two();
 
-            impl #name {
-                pub const fn from_array(value: [#t8; #size]) -> Self {
-                    Self(value)
+            let repr = Ident::new(
+                &format!("u{mask_bits}"),
+                Span::call_site()
+            );
+
+            let variants = variants.iter();
+            quote! {
+                #(#attrs)*
+                #h[derive(Copy, Clone, Eq, PartialEq)]
+                #h[repr(#repr)]
+                #vis enum #name {
+                    #(#variants),*
                 }
-
-                pub const fn from_slice(value: &[#t8])
-                    -> ::core::option::Option<&Self>
-                {
-                    let Some((v, _)) = value.split_at_checked(#size)
-                    else {
-                        return None;
-                    };
-
-                    // SAFETY: 1. align is enforced to 1
-                    //         2. sizes are matched
-                    Some(unsafe {
-                        &*v.as_ptr().cast()
-                    })
-                }
-
-                #(#fields)*
             }
-        });
+        } else {
+            let size = self.size.bits().div_ceil(8);
+            quote! {
+                #(#attrs)*
+                #h[derive(Copy, Clone, Eq, PartialEq)]
+                #h[repr(C)]
+                #vis struct #name([#t8; #size]);
+            }
+        }
+    }
 
-        // - MASK ------
-        let mask_size = size.next_power_of_two();
-        let masks = lit::with_bits(mask_size * 8).map_or_else(
-            || quote! {
-                impl ::bitx::Bits for #name {
-                    type Mask = ();
+    fn stub_gen_mask(&self) -> TokenStream {
+        let name = &self.name;
 
-                    const BITS: #t32 = #bits32;
-                }
-            },
-            |mask| quote! {
+        let bits = Literal::usize_unsuffixed(self.size.bits());
+
+        let bytes = self.size
+            .bits()
+            .div_ceil(8);
+
+        let mask_bytes = bytes.next_power_of_two();
+        let mask_bits = mask_bytes * 8;
+       
+        let t32 = lit::ty("u32");
+
+        if let Body::Enum{ variants, sealed } = &self.body {
+            let mask = lit::with_bits(mask_bytes * 8).unwrap();
+
+            let arms = variants
+                .iter()
+                .map(|variant| variant.to_match_arm());
+
+            let last = if *sealed {
+                Variant::unreachable()
+            } else {
+                TokenStream::new()
+            };
+
+            quote! {        
                 impl ::bitx::Bits for #name {
                     type Mask = #mask;
-                    
-                    const BITS: #t32 = #bits32;
+                    const BITS: #t32 = #bits;
                 }
-                
+
                 impl #name {
-                    const fn __from_mask(mask: #mask) -> Self { 
-                        let mut buf = [0u8; #size];
-
-                        // NOTE: const index is not yet stable
-                        let bytes = mask.to_be_bytes();
-                        let from = bytes.split_at(#mask_size-#size).1;
-
-                        buf.copy_from_slice(&from);
-                        Self(buf)
+                    pub const fn __from_mask(mask: #mask) -> Self {
+                        match mask {
+                            #(#arms,)*
+                            #last
+                        }
                     }
                 }
             }
-        );
-        tokens.extend(masks);
+        } else {
+            lit::with_bits(mask_bits).map_or_else(
+                || quote! {
+                    impl ::bitx::Bits for #name {
+                        type Mask = ();
+                        const BITS: #t32 = #bits;
+                    }
+                },
+                |mask| quote! {
+                    impl ::bitx::Bits for #name {
+                        type Mask = #mask;
+                        const BITS: #t32 = #bits;
+                    }
+                
+                    impl #name {
+                        const fn __from_mask(mask: #mask)
+                            -> Self
+                        { 
+                            let bytes = mask.to_be_bytes();
+                            let from = bytes
+                                .split_at(#mask_bytes - #bytes).1;
+                                    
+                            let mut buf = [0u8; #bytes];
+                            buf.copy_from_slice(&from);
+                                    
+                            Self(buf)
+                        }
+                    }
+                }
+            )
+        }
+    }
 
-        // - VALIDATION ------
-        for field in &self.fields {
-            let ty = &field.ty;
-            let off = field.off.byte * 8 + field.off.bit;
-            let name = field.name.to_string();
+    fn stub_gen_slice(&self) -> TokenStream {
+        let name = &self.name;
 
-            let ty_bits = lit::size_of(ty).map_or_else(
-                || quote! { <#ty as ::bitx::Bits>::BITS as #tsize },
-                |bits| quote! { #bits },
-            );
+        let bytes = self.size
+            .bits()
+            .div_ceil(8);
 
-            let err = format!("'{name}' exceeds struct bounds");
-            tokens.extend(quote! {
-                const _: () = assert!(#off + #ty_bits <= #bits, #err);
-            });
+        let mask_bytes = bytes.next_power_of_two();
+        
+        let t8 = lit::ty("u8");
+
+        if let Body::Enum{ .. } = &self.body {
+            quote! {
+                impl #name {
+                    pub const fn from_array(v: [#t8; #bytes]) -> Self {
+                         Self::from_slice(&v).unwrap()
+                    }
+
+                    pub const fn from_slice(v: &[#t8])
+                        -> ::core::option::Option<Self>
+                    {
+                        let Some((v, _)) = v.split_at_checked(#bytes)
+                        else {
+                            return None;
+                        };
+
+                        let mut buf = [0u8; #mask_bytes];
+                        buf
+                            .split_at_mut(#mask_bytes - #bytes).1
+                            .copy_from_slice(&v);
+
+                        let mask = <Self as ::bitx::Bits>::Mask
+                            ::from_be_bytes(buf);
+                            
+                        Some(Self::__from_mask(mask))
+                    }
+                }
+            }
+        } else {
+            quote! {
+                impl #name {
+                    pub const fn from_array(v: [#t8; #bytes]) -> Self {
+                        Self(v)
+                    }
+                                    
+                    pub const fn from_slice(v: &[#t8])
+                        -> ::core::option::Option<&Self>
+                    {
+                        let Some((v, _)) = v.split_at_checked(#bytes)
+                        else {
+                            return None;
+                        };
+
+                        // SAFETY: 1. align is enforced to 1
+                        //         2. sizes are matched
+                        Some(unsafe {
+                            &*v.as_ptr().cast()
+                        })
+                    }
+                }
+            }
+        }
+    }
+
+    fn stub_fields(&self) -> TokenStream {
+        let Body::Struct(fields) = &self.body else {
+            return TokenStream::new();
+        };
+
+        let name = &self.name;
+        
+        let mut checks = TokenStream::new();
+        for field in fields {
+            field.assert(self.size, &mut checks);
+        }
+
+        let fields = fields.iter();
+        quote! {
+            impl #name {
+                #(#fields)*
+            }
+
+            const _: () = { #checks };
         }
     }
 }
 
-impl Parse for Struct {
+impl ToTokens for Data {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        tokens.extend(self.stub_decl());
+        tokens.extend(self.stub_gen_mask());
+        tokens.extend(self.stub_gen_slice());
+        tokens.extend(self.stub_fields());
+    }
+}
+
+impl Parse for Data {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let vis: Visibility = input.parse()?;
-        let _ = input.parse::<Token![struct]>()?;
-        let name: Ident = input.parse()?;
-        let _ = input.parse::<Token![:]>()?;
-        let bits = {
-            let off: Offset = input.parse()?;
-            off.byte * 8 + off.bit
+        
+        let is_enum = if input.peek(Token![enum]) {
+            let _ = input.parse::<Token![enum]>()?;
+            true
+        } else {
+            let _ = input.parse::<Token![struct]>()?;
+            false
         };
 
-        let braced;
-        syn::braced!(braced in input);
+        let name: Ident = input.parse()?;
+        let _ = input.parse::<Token![:]>()?;
+        let size: Offset = input.parse()?;
 
-        let fields =
-            braced.parse_terminated(Field::parse, Token![,])?;
+        if is_enum && size.bits() > 128 {
+            return Err(input.error(
+                "enum cannot be larger than 128-bit"
+            ));
+        }
+
+        let content;
+        syn::braced!(content in input);
+
+        let body = if is_enum {
+            let variants = content.parse_terminated(
+                Variant::parse,
+                Token![,]
+            )?;
+
+            let mut default: Option<&Ident> = None;
+            for variant in &variants {
+                if variant.value.is_some() {
+                    continue;
+                }
+                    
+                if let Some(old) = &default {
+                    return Err(syn::Error::new(
+                        variant.name.span(),
+                        &format!(
+                            "default is already defined at `{}`",
+                            old.to_string(),
+                        ),
+                    ));
+                } else {
+                    default = Some(&variant.name);
+                }
+            }
+
+            let sealed = if default.is_none() {
+                if size.bits() != variants.len().ilog2() as usize {
+                    return Err(syn::Error::new(
+                        name.span(),
+                        "enum has uncovered cases",
+                    ));
+                }
+
+                true
+            } else {
+                false
+            };
+
+            Body::Enum { variants, sealed }
+        } else {
+            let mut fields = Punctuated::new();
+
+            while !content.is_empty() {
+                fields.push_value(Field::parse(&content, size)?);
+                
+                if content.is_empty() {
+                    break;
+                }
+
+                fields.push_punct(content.parse::<Token![,]>()?);
+            }
+
+            Body::Struct(fields)
+        };
+
 
         Ok(Self {
             attrs,
             vis,
             name,
-            fields,
-            bits,
+            body,
+            size,
         })
     }
 }
+
