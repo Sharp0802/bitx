@@ -273,10 +273,30 @@ impl Parse for Data {
                 ));
             }
 
+            let req = size.bits();
+            let max = if req == 128 {
+                u128::MAX
+            } else {
+                (1u128 << req) - 1
+            };
+
             let mut default: Option<&Ident> = None;
             for variant in &variants {
-                if variant.value.is_some() {
-                    continue;
+                if let Some(lit) = &variant.value {
+                    let val: u128 = lit.base10_parse()?;
+                    
+                    if val <= max {
+                        continue;
+                    }
+                        
+                    return Err(syn::Error::new(
+                        lit.span(),
+                        format!(
+                            "variant value `{val}` exceeds the maximum \
+                             allowed value (`{max}`) for a {req}-bit \
+                             enum"
+                        ),
+                    ));
                 }
 
                 if let Some(old) = &default {
@@ -291,7 +311,6 @@ impl Parse for Data {
             }
 
             let pow = variants.len().is_power_of_two();
-            let req = size.bits();
             let cur = variants.len().ilog2() as usize;
 
             if cur > req || (!pow && cur == req) {
