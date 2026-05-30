@@ -3,39 +3,60 @@
 
 /// Defines a structure with precise bit-level and byte-level fields.
 ///
-/// This macro generates a `#[repr(C)]` struct
-/// backed by a tightly packed `[u8; N]` array.
+/// For structs, this macro generates a `#[repr(C)]` struct
+/// backed by a tightly packed `[u8; N]` array,
+/// along with constant-time getter methods for extracting
+/// sub-byte, unaligned, or standard fields.
 ///
-/// It automatically generates constant-time getter methods
-/// for extracting sub-byte, unaligned, or standard fields,
-/// handling all underlying bitwise shifts and masking safely.
+/// For enums, it generates a `#[repr(uN)]` enum (up to 128 bits)
+/// with strongly typed variants, safely parsing underlying bit patters
+/// and ensuring exhaustive coverage of all possible states.
 ///
 /// # Syntax
 ///
 /// The macro uses a custom syntax to define
-/// the total size and the exact placement of each field:
+/// the total size and the exact placement of each field
+/// or enum variants:
+///
+/// ### Structs
 ///
 /// ```rust
 /// use bitx::bits;
 ///
 /// bits! {
 ///     /// Optional documentation and attributes for the struct
-///     // Total size in `byte.bit` notation (4.0 = 4 bytes / 32 bits)
-///     pub struct Header: 4.4 {
+///     pub struct Header: 4.4 { // Total size = 4.4 = 4 bytes + 4 bits
 ///         /// Flag indicating active status
-///         // Byte 0, Bit 0. 1-bit fields return `bool`
-///         0.0 pub is_active: u1,
+///         0.0 pub is_active: u1, // 1-bit fiels return `bool`
 ///         
 ///         /// A 3-bit status code
-///         // Byte 0, Bit 1. Custom bit-widths are supported
-///         0.1 pub status: u3,
+///         0.1 pub status: u3, // Custom bit-widths are supported
 ///         
 ///         /// Standard aligned field
-///         // Byte 1, Bit 0. bit offset defaults to 0
-///         1 pub payload: u16,
+///         1 pub payload: u16, // Bit offset defaults to 0
 ///         
 ///         /// Unaligned cross-byte field
-///         3.4 checksum: u8, // Byte 3, Bit 4.
+///         3.4 checksum: u8,
+///     }
+/// }
+/// ```
+///
+/// ### Enums
+///
+/// Enums map specific bit patterns to variants.
+/// You must define the bit size,
+/// and the macro ensures the enum is not less-covered/overstuffed.
+///
+/// ```rust
+/// use bitx::bits;
+///
+/// bits! {
+///     /// A 2-bit state enumeration
+///     pub enum State: 0.2 {
+///         0 Inactive,
+///         1 Active,
+///         2 Error,
+///         _ Unknown, // Default fallback for unmapped bit patterns
 ///     }
 /// }
 /// ```
@@ -57,18 +78,24 @@
 /// Fields can be defined using standard or
 /// custom bit-width primitives:
 ///
-/// * `u1`: Treated as a boolean flag.
-/// * `u2` to `u128`: Custom bit-width integers.
-/// * `T`: Custom types are supported if created with `bits!` macro.
+/// - `u1`: Treated as a boolean flag.
+/// - `u2` to `u128`: Custom bit-width integers.
+/// - `T`: Custom types are supported if created with `bits!` macro.
 ///   Unaligned reads for nested types are supported up to 128 bits.
 ///
 /// # Generated API
 ///
-/// For the declared struct, the macro generates:
+/// For both structs and enums, the macro generates:
 ///
 /// - `pub const fn from_array(value: [u8; SIZE]) -> Self`
-/// - `pub const fn from_slice(value: &[u8]) -> Option<&Self>`
-/// - and field getters...
+///
+/// When reading from a slice, the return type differs
+/// to prevent unaligned read of multibyte integer:
+///
+/// - Struct: `pub const fn from_slice(value: &[u8]) -> Option<&Self>`
+/// - Enum: `pub const fn from_slice(value: &[u8]) -> Option<Self>`
+///
+/// Structs also receive generated constant-time field getters.
 ///
 pub use bitx_macros::bits;
 

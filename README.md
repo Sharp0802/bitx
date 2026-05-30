@@ -12,11 +12,12 @@ using more ergonomic syntax.
 
 ## At a glance
 
+Note that **Big-Endian / MSB-0** is used.
+
 ```rust
 use bitx::bits;
 
 bits! {
-    #[derive(Clone, Copy)]
     pub struct Header: 4.4 { // size in `byte.bit` notation (so 36-bit)
         // 1-bit fields automatically return `bool`
         0.0 pub is_active: u1,
@@ -33,7 +34,18 @@ bits! {
 }
 ```
 
-Note that **Big-Endian / MSB-0** is used.
+```rust
+use bitx::bits;
+
+bits! {
+    pub enum State: 0.2 { // 2-bit enum
+        0 Inactive,
+        1 Active,
+        2 Error,
+        _ Unknown, // Default fallback for unmapped bit patterns
+    }
+}
+```
 
 See [docs.rs](https://docs.rs/bitx/latest/bitx/macro.bits.html)
 for more information.
