@@ -12,8 +12,8 @@ impl Offset {
         self.byte * 8 + self.bit
     }
 
-    pub const fn offset_bit(self, v: usize) -> Self {
-        let bits = self.bits() + v;
+    pub const fn offset_bit(self, offset: usize) -> Self {
+        let bits = self.bits() + offset;
         Self {
             byte: bits / 8,
             bit: bits % 8,

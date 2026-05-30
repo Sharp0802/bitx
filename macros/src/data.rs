@@ -31,7 +31,7 @@ impl Data {
         let name = &self.name;
         let vis = &self.vis;
 
-        let h = Pound::default();
+        let sh = Pound::default();
         let t8 = lit::ty("u8");
 
         if let Body::Enum { variants, .. } = &self.body {
@@ -48,8 +48,8 @@ impl Data {
             let variants = variants.iter();
             quote! {
                 #(#attrs)*
-                #h[derive(Copy, Clone, Eq, PartialEq)]
-                #h[repr(#repr)]
+                #sh[derive(Copy, Clone, Eq, PartialEq)]
+                #sh[repr(#repr)]
                 #vis enum #name {
                     #(#variants),*
                 }
@@ -58,8 +58,8 @@ impl Data {
             let size = self.size.bits().div_ceil(8);
             quote! {
                 #(#attrs)*
-                #h[derive(Copy, Clone, Eq, PartialEq)]
-                #h[repr(C)]
+                #sh[derive(Copy, Clone, Eq, PartialEq)]
+                #sh[repr(C)]
                 #vis struct #name([#t8; #size]);
             }
         }
@@ -84,7 +84,7 @@ impl Data {
 
             let arms = variants
                 .iter()
-                .map(|variant| variant.to_match_arm());
+                .map(super::variant::Variant::to_match_arm);
 
             let last = if *sealed {
                 Variant::unreachable()
@@ -272,7 +272,7 @@ impl Parse for Data {
                 Variant::parse,
                 Token![,]
             )?;
-            if variants.len() == 0 {
+            if variants.is_empty() {
                 return Err(syn::Error::new(
                     name.span(),
                     "zero-variant enum is not allowed",
@@ -288,19 +288,17 @@ impl Parse for Data {
                 if let Some(old) = &default {
                     return Err(syn::Error::new(
                         variant.name.span(),
-                        &format!(
-                            "default is already defined at `{}`",
-                            old.to_string(),
+                        format!(
+                            "default is already defined at `{old}`",
                         ),
                     ));
-                } else {
-                    default = Some(&variant.name);
                 }
+                default = Some(&variant.name);
             }
 
 
 
-            let pow = variants.len().count_ones() == 1;
+            let pow = variants.len().is_power_of_two();
             let req = size.bits();
             let cur = variants.len().ilog2() as usize;
 

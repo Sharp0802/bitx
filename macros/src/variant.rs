@@ -14,17 +14,10 @@ impl ToTokens for Variant {
         let attrs = &self.attrs;
         let name = &self.name;
 
-        let def = if let Some(val) = &self.value {
-            quote! {
-                #(#attrs)*
-                #name = #val
-            }
-        } else {
-            quote! {
-                #(#attrs)*
-                #name
-            }
-        };
+        let def = self.value.as_ref().map_or_else(
+            || quote! { #(#attrs)* #name },
+            |val| quote! { #(#attrs)* #name = #val },
+        );
 
         tokens.extend(def);
     }
@@ -34,11 +27,10 @@ impl Variant {
     pub fn to_match_arm(&self) -> TokenStream {
         let name = &self.name;
 
-        if let Some(val) = &self.value {
-            quote! { #val => Self::#name }
-        } else {
-            quote! { _ => Self::#name }
-        }
+        self.value.as_ref().map_or_else(
+            || quote! { _ => Self::#name },
+            |val| quote! { #val => Self::#name },
+        )
     }
 
     pub fn unreachable() -> TokenStream {

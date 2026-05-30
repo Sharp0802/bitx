@@ -11,7 +11,7 @@ fn read_mask(
     off_bytes: impl ToTokens,
     read_bytes: impl ToTokens,
     mask_bytes: impl ToTokens,
-    mask: syn::Type
+    mask: &syn::Type
 ) -> TokenStream {
     quote! {
         {
@@ -39,7 +39,7 @@ pub enum Type {
 
 impl Type {
     pub fn parse(
-        input: &ParseStream,
+        input: ParseStream,
         name: &Ident,
         offset: Offset,
         bound: Offset,
@@ -54,9 +54,8 @@ impl Type {
             let total = offset.offset_bit(bits);
 
             if total > bound {
-                return Err(input.error(&format!(
-                    "field `{}` exceeds struct bounds",
-                    name.to_string(),
+                return Err(input.error(format!(
+                    "field `{name}` exceeds struct bounds",
                 )));
             }
 
@@ -65,10 +64,9 @@ impl Type {
             let mask_bits = mask_bytes * 8;
 
             let Some(mask) = lit::with_bits(mask_bits) else {
-                return Err(input.error(&format!(
-                    "unaligned field `{}` cannot be \
+                return Err(input.error(format!(
+                    "unaligned field `{name}` cannot be \
                      larger than 128 bits",
-                    name.to_string(),
                 )));
             };
 
@@ -88,8 +86,7 @@ impl Type {
         match self {
             Self::Literal { bits: 1, .. } => lit::ty("bool"),
             Self::Literal { mask, .. } => mask.clone(),
-            Self::Aligned(custom) => custom.clone(),
-            Self::Unaligned(custom) => custom.clone(),
+            Self::Aligned(ty) | Self::Unaligned(ty) => ty.clone(),
         }
     }
 
@@ -106,10 +103,9 @@ impl Type {
                 let off_bytes = offset.byte;
                 let upper_bound_bits = offset.bit + bits;
                 let read_bytes = upper_bound_bits.div_ceil(8);
-                let read_bits = read_bytes * 8;
                 let mask_bytes = mask_bits / 8;
 
-                let lpad_bits = read_bits - upper_bound_bits;
+                let lpad_bits = read_bytes * 8 - upper_bound_bits;
                 let rpad_bits = mask_bits - bits;
 
                 let lpad = Literal::usize_unsuffixed(lpad_bits);
@@ -121,15 +117,15 @@ impl Type {
                     quote! { val }
                 };
 
-                let read = read_mask(
+                let read_stub = read_mask(
                     off_bytes,
                     read_bytes,
                     mask_bytes,
-                    mask.clone()
+                    mask,
                 );
 
                 quote! {
-                    let mut val = #read;
+                    let mut val = #read_stub;
                     val >>= #lpad;
                     val &= #mask::MAX >> #rpad;
                     #epilogue
@@ -139,11 +135,11 @@ impl Type {
                 let off_byte = offset.byte;
                 let off_bit = Literal::usize_unsuffixed(offset.bit);
 
-                let read = read_mask(
+                let read_stub = read_mask(
                     off_byte,
                     Ident::new("SIZE", Span::call_site()),
                     16usize,
-                    lit::ty("u128")
+                    &lit::ty("u128")
                 );
 
                 let t32 = lit::ty("u32");
@@ -171,7 +167,7 @@ impl Type {
                         
                         #ty::from_array(buf)
                     } else {
-                        let mut val = #read;
+                        let mut val = #read_stub;
                         val >>= (SIZE as #t32 * 8) - (#off_bit + BITS);
                         let val = (val as Mask) & MASK;
 
@@ -183,11 +179,11 @@ impl Type {
                 let off_byte = offset.byte;
                 let off_bit = Literal::usize_unsuffixed(offset.bit);
 
-                let read = read_mask(
+                let read_stub = read_mask(
                     off_byte,
                     Ident::new("SIZE", Span::call_site()),
                     16usize,
-                    lit::ty("u128"),
+                    &lit::ty("u128"),
                 );
 
                 let t32 = lit::ty("u32");
@@ -205,7 +201,7 @@ impl Type {
                         #E_BIG_UNALIGNED
                     );
 
-                    let mut val = #read;
+                    let mut val = #read_stub;
                     val >>= (SIZE as #t32 * 8) - (#off_bit + BITS);
                     let val = (val as Mask) & MASK;
 
@@ -239,16 +235,15 @@ impl Field {
         let name: Ident = input.parse()?;
 
         if offset >= bound {
-            return Err(input.error(&format!(
-                "offset of field `{}` exceeds struct bounds",
-                name.to_string(),
+            return Err(input.error(format!(
+                "offset of field `{name}` exceeds struct bounds",
             )));
         }
 
         let _ = input.parse::<Token![:]>()?;
 
         let ty: Type = Type::parse(
-            &input,
+            input,
             &name,
             offset,
             bound
@@ -271,7 +266,7 @@ impl Field {
         
         let err = format!(
             "field `{}` exceeds struct bounds",
-            self.name.to_string(),
+            self.name,
         );
 
         // SAFETY: `size` always greater than `off`; See `parse`.
