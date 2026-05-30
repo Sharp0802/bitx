@@ -122,9 +122,7 @@ impl Data {
                     }
                 
                     impl #name {
-                        const fn __from_mask(mask: #mask)
-                            -> Self
-                        { 
+                        const fn __from_mask(mask: #mask) -> Self {
                             let bytes = mask.to_be_bytes();
                             let from = bytes
                                 .split_at(#mask_bytes - #bytes).1;
@@ -148,7 +146,11 @@ impl Data {
             .div_ceil(8);
 
         let mask_bytes = bytes.next_power_of_two();
-        
+
+        let mask_bits = mask_bytes * 8;
+        let bits = self.size.bits();
+        let erase_bits = Literal::usize_unsuffixed(mask_bits - bits);
+
         let t8 = lit::ty("u8");
 
         if let Body::Enum{ .. } = &self.body {
@@ -161,6 +163,8 @@ impl Data {
                     pub const fn from_slice(v: &[#t8])
                         -> ::core::option::Option<Self>
                     {
+                        type Mask = <#name as ::bitx::Bits>::Mask;
+
                         let Some((v, _)) = v.split_at_checked(#bytes)
                         else {
                             return None;
@@ -171,9 +175,9 @@ impl Data {
                             .split_at_mut(#mask_bytes - #bytes).1
                             .copy_from_slice(&v);
 
-                        let mask = <Self as ::bitx::Bits>::Mask
-                            ::from_be_bytes(buf);
-                            
+                        let mut mask = Mask::from_be_bytes(buf);
+                        mask &= (Mask::MAX >> #erase_bits);
+
                         Some(Self::__from_mask(mask))
                     }
                 }
@@ -268,6 +272,12 @@ impl Parse for Data {
                 Variant::parse,
                 Token![,]
             )?;
+            if variants.len() == 0 {
+                return Err(syn::Error::new(
+                    name.span(),
+                    "zero-variant enum is not allowed",
+                ));
+            }
 
             let mut default: Option<&Ident> = None;
             for variant in &variants {
@@ -288,8 +298,21 @@ impl Parse for Data {
                 }
             }
 
+
+
+            let pow = variants.len().count_ones() == 1;
+            let req = size.bits();
+            let cur = variants.len().ilog2() as usize;
+
+            if (pow && req < cur) || (!pow && req == cur) {
+                return Err(syn::Error::new(
+                    name.span(),
+                    "enum is overstuffed",
+                ));
+            }
+
             let sealed = if default.is_none() {
-                if size.bits() != variants.len().ilog2() as usize {
+                if req != cur {
                     return Err(syn::Error::new(
                         name.span(),
                         "enum has uncovered cases",
