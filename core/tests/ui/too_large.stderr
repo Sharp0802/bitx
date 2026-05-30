@@ -64,7 +64,7 @@ error[E0599]: no associated function or constant named `BITS` found for unit typ
    |
    = note: this error originates in the macro `bits` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0080]: evaluation panicked: unaligned nested types cannot exceed 128-bit
+error[E0080]: evaluation panicked: unaligned nested types cannot exceed 128 bits
   --> tests/ui/too_large.rs:11:1
    |
 11 | / bits! {

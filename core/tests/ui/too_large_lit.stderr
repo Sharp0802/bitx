@@ -1,23 +1,5 @@
-error: macros that expand to items must be delimited with braces or followed by a semicolon
- --> tests/ui/too_large_lit.rs:3:1
+error: unaligned field `huge_field` cannot be larger than 128 bits
+ --> tests/ui/too_large_lit.rs:5:33
   |
-3 | / bits! {
-4 | |     pub struct HugePacket: 33.0 {
-5 | |         0.1 pub huge_field: u129,
-... |
-8 | | }
-  | |_^
-  |
-  = note: this error originates in the macro `bits` (in Nightly builds, run with -Z macro-backtrace for more info)
-
-error: unaligned extraction is not supported for sizes larger than 128-bit
- --> tests/ui/too_large_lit.rs:3:1
-  |
-3 | / bits! {
-4 | |     pub struct HugePacket: 33.0 {
-5 | |         0.1 pub huge_field: u129,
-... |
-8 | | }
-  | |_^
-  |
-  = note: this error originates in the macro `bits` (in Nightly builds, run with -Z macro-backtrace for more info)
+5 |         0.1 pub huge_field: u129,
+  |                                 ^

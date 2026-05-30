@@ -1,10 +1,5 @@
-error[E0080]: evaluation panicked: 'too_large' exceeds struct bounds
- --> tests/ui/bounds_check.rs:3:1
+error: field `too_large` exceeds struct bounds
+ --> tests/ui/bounds_check.rs:6:31
   |
-3 | / bits! {
-4 | |     pub struct OutOfBoundsPacket: 1.0 {
-5 | |         0.0 pub flag: u1,
-6 | |         0.1 pub too_large: u16, // Requires 16 bits, exceeds bounds
-7 | |     }
-8 | | }
-  | |_^ evaluation of `_` failed here
+6 |         0.1 pub too_large: u16, // Requires 16 bits, exceeds bounds
+  |                               ^
