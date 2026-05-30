@@ -2,8 +2,8 @@
 #![no_main]
 
 mod data;
-mod lit;
 mod field;
+mod lit;
 mod off;
 mod variant;
 
@@ -17,4 +17,3 @@ fuzz_target!(|data: &str| {
         let _ = parse2::<Data>(tokens);
     }
 });
-

@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{Attribute, Ident, LitInt, Token};
 
@@ -51,11 +51,6 @@ impl Parse for Variant {
 
         let name: Ident = input.parse()?;
 
-        Ok(Self {
-            attrs,
-            value,
-            name,
-        })
+        Ok(Self { attrs, value, name })
     }
 }
-

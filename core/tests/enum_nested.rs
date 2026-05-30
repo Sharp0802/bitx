@@ -66,7 +66,7 @@ bits! {
 #[test]
 fn test_enum_in_struct() {
     // [ Power (2) | Status (3) | Flag (3) ]
-    // [   1 0     |   0 1 0    |  1 1 1   ] 
+    // [   1 0     |   0 1 0    |  1 1 1   ]
     // -> 10010111 in binary -> 0x97
 
     let header = DeviceHeader::from_array([0b10_010_111]);
@@ -75,4 +75,3 @@ fn test_enum_in_struct() {
     assert_eq!(header.status(), Status::Paused);
     assert_eq!(header.flag(), 7);
 }
-

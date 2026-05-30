@@ -17,17 +17,16 @@ proptest! {
     fn fuzz_struct_reads(bytes in any::<[u8; 4]>()) {
         // Ensure constructors never panic
         let header = FuzzHeader::from_array(bytes);
-        
+
         // Ensure slice reads never panic on valid sizes
         assert!(FuzzHeader::from_slice(&bytes).is_some());
-        
+
         // Getters shouldn't panic and should stay within bit bounds
         let _flag = header.flag();
         let status = header.status();
         let unaligned = header.unaligned_cross();
-        
+
         assert!(status <= 7); // u3 max is 7
         assert!(unaligned <= 4095); // u12 max is 4095
     }
 }
-

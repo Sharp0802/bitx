@@ -1,5 +1,5 @@
-use proc_macro2::{Span, TokenStream, Literal};
-use quote::{quote, ToTokens};
+use proc_macro2::{Literal, Span, TokenStream};
+use quote::{ToTokens, quote};
 use syn::parse::ParseStream;
 use syn::{Attribute, Ident, Token, Visibility};
 
@@ -11,7 +11,7 @@ fn read_mask(
     off_bytes: impl ToTokens,
     read_bytes: impl ToTokens,
     mask_bytes: impl ToTokens,
-    mask: &syn::Type
+    mask: &syn::Type,
 ) -> TokenStream {
     quote! {
         {
@@ -45,11 +45,11 @@ impl Type {
         bound: Offset,
     ) -> syn::Result<Self> {
         let raw: syn::Type = input.parse()?;
-        
+
         // NOTE: custom nested type cannot be check at here;
         //       a detour using `Bits` trait is required.
         //       See `Field::assert`.
-        
+
         if let Some(bits) = lit::size_of(&raw) {
             let total = offset.offset_bit(bits);
 
@@ -93,7 +93,7 @@ impl Type {
     pub fn reader(&self, offset: Offset) -> TokenStream {
         const E_BIG_UNALIGNED: &str =
             "unaligned nested types cannot exceed 128 bits";
-        
+
         match self {
             Self::Literal {
                 bits,
@@ -110,19 +110,15 @@ impl Type {
 
                 let lpad = Literal::usize_unsuffixed(lpad_bits);
                 let rpad = Literal::usize_unsuffixed(rpad_bits);
-                
+
                 let epilogue = if *bits == 1 {
                     quote! { val == 1 }
                 } else {
                     quote! { val }
                 };
 
-                let read_stub = read_mask(
-                    off_bytes,
-                    read_bytes,
-                    mask_bytes,
-                    mask,
-                );
+                let read_stub =
+                    read_mask(off_bytes, read_bytes, mask_bytes, mask);
 
                 quote! {
                     let mut val = #read_stub;
@@ -139,7 +135,7 @@ impl Type {
                     off_byte,
                     Ident::new("SIZE", Span::call_site()),
                     16usize,
-                    &lit::ty("u128")
+                    &lit::ty("u128"),
                 );
 
                 let t32 = lit::ty("u32");
@@ -161,10 +157,10 @@ impl Type {
                         let from = self.0
                             .split_at(#off_byte).1
                             .split_at(SIZE).0;
-                        
+
                         let mut buf = [0u8; SIZE];
                         buf.copy_from_slice(from);
-                        
+
                         #ty::from_array(buf)
                     } else {
                         let mut val = #read_stub;
@@ -195,7 +191,7 @@ impl Type {
                     const MASK: Mask = Mask::MAX>>(Mask::BITS - BITS);
                     const SIZE: #tsize =
                         (#off_bit + BITS as #tsize).div_ceil(8);
-                    
+
                     const _: () = assert!(
                         SIZE <= 16,
                         #E_BIG_UNALIGNED
@@ -210,9 +206,7 @@ impl Type {
             }
         }
     }
-
-} 
-
+}
 
 pub struct Field {
     attrs: Vec<Attribute>,
@@ -242,12 +236,7 @@ impl Field {
 
         let _ = input.parse::<Token![:]>()?;
 
-        let ty: Type = Type::parse(
-            input,
-            &name,
-            offset,
-            bound
-        )?;
+        let ty: Type = Type::parse(input, &name, offset, bound)?;
 
         Ok(Self {
             attrs,
@@ -263,17 +252,14 @@ impl Field {
             // NOTE: already checked before when it parsed
             return;
         }
-        
-        let err = format!(
-            "field `{}` exceeds struct bounds",
-            self.name,
-        );
+
+        let err =
+            format!("field `{}` exceeds struct bounds", self.name);
 
         // SAFETY: `size` always greater than `off`; See `parse`.
-        let max = Literal::usize_unsuffixed(
-            size.bits() - self.offset.bits()
-        );
-        
+        let max =
+            Literal::usize_unsuffixed(size.bits() - self.offset.bits());
+
         let ty = self.ty.ret_ty();
 
         stream.extend(quote! {
@@ -291,7 +277,7 @@ impl ToTokens for Field {
         let attrs = &self.attrs;
         let name = &self.name;
         let vis = &self.vis;
-        
+
         let stub = self.ty.reader(self.offset);
         let ret_ty = self.ty.ret_ty();
 
@@ -303,4 +289,3 @@ impl ToTokens for Field {
         }
     }
 }
-

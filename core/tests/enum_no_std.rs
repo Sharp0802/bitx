@@ -24,4 +24,3 @@ fn test_enum_full_coverage() {
     let state_sleep = PowerState::from_slice(&[1]).unwrap();
     assert_eq!(state_sleep, PowerState::Sleep);
 }
-

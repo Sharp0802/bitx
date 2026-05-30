@@ -15,4 +15,3 @@ pub fn bits(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as data::Data);
     ast.to_token_stream().into()
 }
-

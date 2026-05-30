@@ -43,4 +43,3 @@ fn test_fallback() {
     assert_eq!(Status::from_array([3]), Status::Unknown);
     assert_eq!(Status::from_array([7]), Status::Unknown);
 }
-

@@ -40,7 +40,6 @@ pub fn size_of(ty: &Type) -> Option<usize> {
     Some(bits)
 }
 
-
 pub fn with_bits(size: usize) -> Option<Type> {
     if size == 0 || 128 < size {
         return None;
@@ -48,4 +47,3 @@ pub fn with_bits(size: usize) -> Option<Type> {
 
     Some(ty(&format!("u{size}")))
 }
-
