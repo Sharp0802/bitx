@@ -55,7 +55,7 @@ impl Data {
             quote! {
                 #(#attrs)*
                 #sh[derive(Copy, Clone, Eq, PartialEq)]
-                #sh[repr(C)]
+                #sh[repr(C, packed)]
                 #vis struct #name([#t8; #size]);
             }
         }
