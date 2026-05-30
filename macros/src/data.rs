@@ -294,7 +294,7 @@ impl Parse for Data {
             let req = size.bits();
             let cur = variants.len().ilog2() as usize;
 
-            if (pow && req < cur) || (!pow && req == cur) {
+            if cur > req || (!pow && cur == req) {
                 return Err(syn::Error::new(
                     name.span(),
                     "enum is overstuffed",
