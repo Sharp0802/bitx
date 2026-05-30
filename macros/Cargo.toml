@@ -1,12 +1,12 @@
 [package]
 name = "bitx-macros"
+description = "proc-macro stubs for `bitx` crate"
+
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-
-description = "proc-macro stubs for `bitx` crate"
 
 [lib]
 proc-macro = true

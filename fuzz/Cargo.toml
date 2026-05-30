@@ -1,0 +1,25 @@
+[package]
+name = "bitx-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys.workspace = true
+proc-macro2.workspace = true
+quote.workspace = true
+syn.workspace = true
+
+[lints]
+workspace = true
+
+[[bin]]
+name = "parse"
+path = "../macros/src/fuzz.rs"
+test = false
+doc = false
+bench = false
+
