@@ -1,6 +1,7 @@
 #![expect(missing_docs, reason = "will be documented in bitx crate")]
 
 mod ast;
+mod cg;
 mod hir;
 mod lit;
 mod off;
