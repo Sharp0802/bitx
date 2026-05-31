@@ -31,4 +31,3 @@ impl Variants {
         self.0.into_iter()
     }
 }
-

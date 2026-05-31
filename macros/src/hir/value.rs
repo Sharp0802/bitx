@@ -65,7 +65,7 @@ impl TryFrom<ast::Value> for Value {
                     start: val,
                     end: val,
                 })
-            },
+            }
             ast::Value::Range(lhs_lit, rhs_lit) => {
                 let start: u128 = lhs_lit.base10_parse()?;
                 let end: u128 = rhs_lit.base10_parse()?;
@@ -73,7 +73,7 @@ impl TryFrom<ast::Value> for Value {
                 if start < end {
                     Ok(Self {
                         start,
-                        end: end - 1
+                        end: end - 1,
                     })
                 } else {
                     Err(Error::new(
@@ -81,7 +81,7 @@ impl TryFrom<ast::Value> for Value {
                         "end of range must be greater than start",
                     ))
                 }
-            },
+            }
             ast::Value::RangeEq(lhs_lit, rhs_lit) => {
                 let start: u128 = lhs_lit.base10_parse()?;
                 let end: u128 = rhs_lit.base10_parse()?;
@@ -92,10 +92,10 @@ impl TryFrom<ast::Value> for Value {
                     Err(Error::new(
                         rhs_lit.span(),
                         "end of inclusive range must be equal to \
-                         or greater than start"
+                         or greater than start",
                     ))
                 }
-            },
+            }
         }
     }
 }
@@ -121,10 +121,14 @@ impl Values {
                 end: self.0[self.0.len() - 1].end,
             })
         } else {
-            Err(self.0.windows(2).map(|pair| Value {
-                start: pair[0].end,
-                end: pair[1].start,
-            }).collect())
+            Err(self
+                .0
+                .windows(2)
+                .map(|pair| Value {
+                    start: pair[0].end,
+                    end: pair[1].start,
+                })
+                .collect())
         }
     }
 
@@ -219,8 +223,7 @@ impl TryFrom<ast::Values> for Values {
             .into_iter()
             .map(Value::try_from)
             .collect::<Result<Vec<_>>>()?;
-        
+
         Ok(raw.into())
     }
 }
-

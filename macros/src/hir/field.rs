@@ -1,5 +1,5 @@
-use crate::prelude::*;
 use crate::hir::Mask;
+use crate::prelude::*;
 
 pub enum Kind {
     Literal(Offset),
@@ -83,4 +83,3 @@ impl TryFrom<ast::Data> for Struct {
         })
     }
 }
-

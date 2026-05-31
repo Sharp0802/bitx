@@ -102,10 +102,7 @@ impl Parse for Offset {
             }
             let num = bit.base10_parse()?;
             if num >= 8 {
-                return Err(Error::new(
-                    bit.span(),
-                    "bit offset must be 0-7",
-                ));
+                return Err(Error::new(bit.span(), "bit offset must be 0-7"));
             }
             num
         } else {

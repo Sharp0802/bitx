@@ -23,4 +23,3 @@ impl TryFrom<ast::Data> for Data {
         }
     }
 }
-

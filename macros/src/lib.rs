@@ -1,10 +1,10 @@
 #![expect(missing_docs, reason = "will be documented in bitx crate")]
 
-mod prelude;
 mod ast;
 mod hir;
 mod lit;
 mod off;
+mod prelude;
 
 use prelude::*;
 use proc_macro as pm;
@@ -23,4 +23,3 @@ pub fn bits(input: pm::TokenStream) -> pm::TokenStream {
         Err(err) => err.into_compile_error().into(),
     }
 }
-

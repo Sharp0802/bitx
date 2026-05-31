@@ -7,9 +7,8 @@ pub struct Mask {
 
 impl Mask {
     pub fn for_size(size: Offset) -> Option<Self> {
-        let size = Offset::from_bytes(
-            size.bits().div_ceil(8).next_power_of_two()
-        );
+        let size =
+            Offset::from_bytes(size.bits().div_ceil(8).next_power_of_two());
         if size.bits() < 1 || 128 < size.bits() {
             return None;
         }
@@ -18,4 +17,3 @@ impl Mask {
         Some(Self { size, ty })
     }
 }
-

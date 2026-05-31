@@ -1,4 +1,4 @@
-use crate::ast::{Variants, Fields};
+use crate::ast::{Fields, Variants};
 use crate::prelude::*;
 
 pub enum Body {
@@ -19,7 +19,7 @@ impl Parse for Data {
         let attrs = input.call(Attribute::parse_outer)?;
 
         let vis: Visibility = input.parse()?;
-        
+
         let is_struct = if input.peek(Token![struct]) {
             _ = input.parse::<Token![struct]>()?;
             true
@@ -47,4 +47,3 @@ impl Parse for Data {
         })
     }
 }
-

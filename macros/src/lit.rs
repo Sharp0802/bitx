@@ -41,4 +41,3 @@ pub fn size_of(ty: &Type) -> Option<Offset> {
 pub fn with_size(size: Offset) -> Type {
     ty(&format!("u{}", size.bits()))
 }
-

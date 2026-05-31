@@ -42,4 +42,3 @@ impl Fields {
         self.0.into_iter()
     }
 }
-
