@@ -103,17 +103,16 @@ impl TryFrom<ast::Value> for Value {
 impl Values {
     #[must_use]
     #[inline]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
     #[must_use]
     #[inline]
-    pub const fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    #[must_use]
     pub fn bounds(&self) -> StdResult<Value, Vec<Value>> {
         if self.0.len() == 1 {
             Ok(Value {
@@ -132,12 +131,10 @@ impl Values {
         }
     }
 
-    #[must_use]
     pub fn iter(&self) -> impl Iterator<Item = &Value> {
         self.0.iter()
     }
 
-    #[must_use]
     pub fn no_overlap(mut raw: Vec<Value>) -> StdResult<Self, usize> {
         if raw.len() <= 1 {
             return Ok(Self(raw));
@@ -150,8 +147,7 @@ impl Values {
         let mut iter = raw.into_iter();
         let mut buffer = iter.next().unwrap();
 
-        let mut i = 0;
-        for item in iter {
+        for (i, item) in iter.enumerate() {
             if buffer.overlap_strict(&item) {
                 return Err(i);
             } else if buffer.overlap(&item) {
@@ -159,8 +155,6 @@ impl Values {
             } else {
                 merged.push(std::mem::replace(&mut buffer, item));
             }
-
-            i += 1;
         }
 
         merged.push(buffer);
@@ -176,7 +170,7 @@ impl Display for Values {
                 write!(f, " | ")?;
             }
 
-            write!(f, "{}", &self.0[i])?;
+            write!(f, "{}", self.0[i])?;
         }
 
         if self.0.len() > 3 {
@@ -198,7 +192,9 @@ impl From<Vec<Value>> for Values {
         let mut merged = Vec::with_capacity(raw.len());
 
         let mut iter = raw.into_iter();
-        let mut buffer = iter.next().unwrap();
+        let Some(mut buffer) = iter.next() else {
+            unreachable!()
+        };
 
         for item in iter {
             if buffer.overlap(&item) {

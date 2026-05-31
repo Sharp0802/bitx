@@ -1,9 +1,10 @@
 use crate::hir::Mask;
 use crate::prelude::*;
+use std::boxed::Box;
 
 pub enum Kind {
     Literal(Offset),
-    Custom(Type),
+    Custom(Box<Type>),
 }
 
 pub struct Field {
@@ -31,7 +32,7 @@ impl TryFrom<ast::Field> for Field {
         let (kind, mask) = if let Some(size) = lit::size_of(&value.ty) {
             (Kind::Literal(size), Mask::for_size(size))
         } else {
-            (Kind::Custom(value.ty), None)
+            (Kind::Custom(Box::new(value.ty)), None)
         };
 
         Ok(Self {
@@ -55,7 +56,7 @@ impl TryFrom<ast::Data> for Struct {
 
         let fields: Vec<Field> = fields
             .into_iter()
-            .map(|field| field.try_into())
+            .map(std::convert::TryInto::try_into)
             .collect::<Result<Vec<_>>>()?;
 
         for field in &fields {

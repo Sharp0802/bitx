@@ -10,7 +10,7 @@ use prelude::*;
 use proc_macro as pm;
 
 fn bits_impl(ast: ast::Data) -> Result<pm::TokenStream> {
-    let hir: hir::Data = ast.try_into()?;
+    let _hir: hir::Data = ast.try_into()?;
     //ast.to_token_stream().into()
     Ok(pm::TokenStream::new())
 }

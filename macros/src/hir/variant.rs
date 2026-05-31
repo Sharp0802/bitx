@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::hir::{Mask, Value, Values};
+use crate::hir::{Mask, Values};
 use crate::prelude::*;
 
 pub struct Variant {
@@ -27,6 +27,74 @@ impl TryFrom<ast::Variant> for Variant {
     }
 }
 
+fn check_range<'a>(
+    variants: impl Iterator<Item = &'a Variant>,
+    max: u128,
+) -> Result<()> {
+    for variant in variants {
+        for value in variant.values.iter() {
+            if value.end <= max {
+                continue;
+            }
+
+            return Err(Error::new(
+                variant.name.span(),
+                format!(
+                    "value of variant exceeds \
+                     maximum value of enum (`{max}`)"
+                ),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+fn merge_values(variants: &[Variant]) -> Result<Values> {
+    Values::no_overlap(
+        variants
+            .iter()
+            .flat_map(|var| var.values.iter())
+            .copied()
+            .collect::<Vec<_>>(),
+    )
+    .map_err(|at| {
+        let mut who = &variants[0];
+
+        let mut i = 0;
+        for variant in variants {
+            i += variant.values.len();
+            if at < i {
+                who = variant;
+            }
+        }
+
+        Error::new(
+            who.name.span(),
+            "variant is overlapped with previous variants",
+        )
+    })
+}
+
+fn check_coverage(values: &Values, max: u128, name: &Ident) -> Result<()> {
+    match values.bounds() {
+        Ok(bounds) if 0 < bounds.start => Err(Error::new(
+            name.span(),
+            format!("enum has uncovered case: ..{}", bounds.start),
+        )),
+        Ok(bounds) if bounds.end < max => Err(Error::new(
+            name.span(),
+            format!("enum has uncovered case: {}..{max}", bounds.end + 1,),
+        )),
+        Err(gaps) => Err(Error::new(
+            name.span(),
+            format!("enum has uncovered case: {}", Into::<Values>::into(gaps),),
+        )),
+
+        Ok(_bounds) => Ok(()),
+    }
+}
+
 impl TryFrom<ast::Data> for Enum {
     type Error = Error;
 
@@ -48,7 +116,7 @@ impl TryFrom<ast::Data> for Enum {
 
         let variants: Vec<Variant> = variants
             .into_iter()
-            .map(|variant| variant.try_into())
+            .map(std::convert::TryInto::try_into)
             .collect::<Result<Vec<_>>>()?;
         if variants.is_empty() {
             return Err(Error::new(
@@ -57,81 +125,16 @@ impl TryFrom<ast::Data> for Enum {
             ));
         }
 
-        let mut has_default = false;
-        for variant in &variants {
-            has_default |= variant.values.is_empty();
+        check_range(variants.iter(), max)?;
 
-            for value in variant.values.iter() {
-                if value.end <= max {
-                    continue;
-                }
+        let has_default = variants.iter().any(|var| var.values.is_empty());
 
-                return Err(Error::new(
-                    variant.name.span(),
-                    "value of variant exceeds maximum value of enum (`{max}`)",
-                ));
-            }
-        }
-
-        let values: Values = match Values::no_overlap(
-            variants
-                .iter()
-                .flat_map(|var| var.values.iter())
-                .cloned()
-                .collect::<Vec<_>>(),
-        ) {
-            Ok(values) => values,
-            Err(at) => {
-                let mut who = &variants[0];
-
-                let mut i = 0;
-                for variant in &variants {
-                    i += variant.values.len();
-                    if at < i {
-                        who = variant;
-                    }
-                }
-
-                return Err(Error::new(
-                    who.name.span(),
-                    "variant is overlapped with previous variants",
-                ));
-            }
-        };
-
-        let is_sealed = if !has_default {
-            match values.bounds() {
-                Ok(bounds) if 0 < bounds.start => {
-                    return Err(Error::new(
-                        ast.name.span(),
-                        &format!("enum has uncovered case: ..{}", bounds.start),
-                    ));
-                }
-                Ok(bounds) if bounds.end < max => {
-                    return Err(Error::new(
-                        ast.name.span(),
-                        &format!(
-                            "enum has uncovered case: {}..{max}",
-                            bounds.end + 1,
-                        ),
-                    ));
-                }
-                Err(gaps) => {
-                    return Err(Error::new(
-                        ast.name.span(),
-                        &format!(
-                            "enum has uncovered case: {}",
-                            Into::<Values>::into(gaps),
-                        ),
-                    ));
-                }
-
-                Ok(bounds) => {}
-            };
-
-            true
-        } else {
+        let is_sealed = if has_default {
             false
+        } else {
+            let bounds = merge_values(&variants)?;
+            check_coverage(&bounds, max, &ast.name)?;
+            true
         };
 
         let mask = Mask::for_size(ast.size).unwrap();

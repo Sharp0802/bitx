@@ -1,8 +1,10 @@
+#[expect(clippy::redundant_pub_crate)]
 pub(crate) use crate::ast;
+#[expect(clippy::redundant_pub_crate)]
 pub(crate) use crate::lit;
+#[expect(clippy::redundant_pub_crate)]
 pub(crate) use crate::off::Offset;
-pub use proc_macro2::{Literal, Span, TokenStream};
-pub use quote::{ToTokens, quote};
+pub use proc_macro2::Span;
 pub use syn::parse::{Parse, ParseStream};
 pub use syn::punctuated::Punctuated;
 pub use syn::{
