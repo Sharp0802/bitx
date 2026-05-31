@@ -1,5 +1,5 @@
-use syn::parse::{Parse, ParseStream};
-use syn::{Error, LitFloat, LitInt, Result, Token};
+use crate::prelude::*;
+use std::ops::Add;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Offset {
@@ -8,14 +8,39 @@ pub struct Offset {
 }
 
 impl Offset {
+    #[must_use]
+    #[inline]
+    pub const fn from_bits(bits: usize) -> Self {
+        Self {
+            byte: bits / 8,
+            bit: bits % 8,
+        }
+    }
+
+    #[must_use]
+    #[inline]
+    pub const fn from_bytes(bytes: usize) -> Self {
+        Self {
+            byte: bytes,
+            bit: 0,
+        }
+    }
+
+    #[must_use]
+    #[inline]
     pub const fn bits(self) -> usize {
         self.byte * 8 + self.bit
     }
+}
 
-    pub const fn offset_bit(self, offset: usize) -> Self {
-        let bits = self.bits() + offset;
+impl Add for Offset {
+    type Output = Self;
+
+    #[inline]
+    fn add(self, rhs: Self) -> Self {
+        let bits = self.bit + rhs.bit;
         Self {
-            byte: bits / 8,
+            byte: self.byte + rhs.byte + bits / 8,
             bit: bits % 8,
         }
     }
