@@ -79,7 +79,7 @@ fn check_coverage(values: &Values, max: u128, name: &Ident) -> Result<()> {
         )),
         Ok(bounds) if bounds.end < max => Err(Error::new(
             name.span(),
-            format!("enum has uncovered case: {}..{max}", bounds.end + 1),
+            format!("enum has uncovered case: {}..={max}", bounds.end + 1),
         )),
         Err(gaps) => Err(Error::new(
             name.span(),
