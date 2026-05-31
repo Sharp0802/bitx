@@ -124,8 +124,8 @@ impl Values {
                 .0
                 .windows(2)
                 .map(|pair| Value {
-                    start: pair[0].end,
-                    end: pair[1].start,
+                    start: pair[0].end + 1,
+                    end: pair[1].start - 1,
                 })
                 .collect())
         }
