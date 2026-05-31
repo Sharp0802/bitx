@@ -58,20 +58,15 @@ fn merge_values(variants: &[Variant]) -> Result<Values> {
             .copied()
             .collect::<Vec<_>>(),
     )
-    .map_err(|at| {
-        let mut who = &variants[0];
-
-        let mut i = 0;
-        for variant in variants {
-            i += variant.values.len();
-            if at < i {
-                who = variant;
-            }
-        }
+    .map_err(|cause| {
+        let who = variants
+            .iter()
+            .find(|var| var.values.iter().any(|val| val == &cause))
+            .unwrap();
 
         Error::new(
             who.name.span(),
-            "variant is overlapped with previous variants",
+            format!("variant overlaps with a previous variant (at {cause})"),
         )
     })
 }
@@ -84,11 +79,11 @@ fn check_coverage(values: &Values, max: u128, name: &Ident) -> Result<()> {
         )),
         Ok(bounds) if bounds.end < max => Err(Error::new(
             name.span(),
-            format!("enum has uncovered case: {}..{max}", bounds.end + 1,),
+            format!("enum has uncovered case: {}..{max}", bounds.end + 1),
         )),
         Err(gaps) => Err(Error::new(
             name.span(),
-            format!("enum has uncovered case: {}", Into::<Values>::into(gaps),),
+            format!("enum has uncovered case: {}", Into::<Values>::into(gaps)),
         )),
 
         Ok(_bounds) => Ok(()),

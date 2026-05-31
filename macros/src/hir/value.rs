@@ -135,7 +135,7 @@ impl Values {
         self.0.iter()
     }
 
-    pub fn no_overlap(mut raw: Vec<Value>) -> StdResult<Self, usize> {
+    pub fn no_overlap(mut raw: Vec<Value>) -> StdResult<Self, Value> {
         if raw.len() <= 1 {
             return Ok(Self(raw));
         }
@@ -147,9 +147,9 @@ impl Values {
         let mut iter = raw.into_iter();
         let mut buffer = iter.next().unwrap();
 
-        for (i, item) in iter.enumerate() {
+        for item in iter {
             if buffer.overlap_strict(&item) {
-                return Err(i);
+                return Err(item);
             } else if buffer.overlap(&item) {
                 buffer.merge(&item);
             } else {
