@@ -1,4 +1,5 @@
 use crate::ast::Values;
+use crate::tt::*;
 use crate::prelude::*;
 
 pub struct Variant {
@@ -6,10 +7,8 @@ pub struct Variant {
     pub values: Values,
 }
 
-pub struct Variants(Punctuated<Variant, Token![,]>);
-
 impl Parse for Variant {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: &mut Input) -> Result<Self, Error> {
         let values = input.parse()?;
         let name = input.parse()?;
 
@@ -17,17 +16,3 @@ impl Parse for Variant {
     }
 }
 
-impl Parse for Variants {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let content;
-        syn::braced!(content in input);
-        let vars = content.parse_terminated(Variant::parse, Token![,])?;
-        Ok(Self(vars))
-    }
-}
-
-impl Variants {
-    pub fn into_iter(self) -> impl Iterator<Item = Variant> {
-        self.0.into_iter()
-    }
-}

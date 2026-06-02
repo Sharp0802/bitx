@@ -1,56 +1,67 @@
 use crate::prelude::*;
+use crate::tt::*;
 
-pub enum Value {
-    Point(LitInt),
-    Range(LitInt, LitInt),
-    RangeEq(LitInt, LitInt),
+pub struct Value {
+    pub start: u128,
+    pub end: u128,
 }
-
-pub struct Values(Vec<Value>);
 
 impl Parse for Value {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let lhs = input.parse()?;
+    fn parse(input: &mut Input) -> Result<Self, Error> {
+        let lhs = {
+            let lit: Literal = input.parse()?;
+            let Ok(lhs) = parse_u128(&lit.to_string()) else {
+                return Err(input.error("start of range must be valid integer"));
+            };
 
-        if input.peek(Token![..=]) {
-            _ = input.parse::<Token![..=]>()?;
+            lhs
+        };
 
-            let rhs = input.parse()?;
-            Ok(Self::RangeEq(lhs, rhs))
-        } else if input.peek(Token![..]) {
-            _ = input.parse::<Token![..]>()?;
+        tok! {
+            input.peek();
 
-            let rhs = input.parse()?;
-            Ok(Self::Range(lhs, rhs))
-        } else {
-            Ok(Self::Point(lhs))
+            Punct '.' => {
+                _ = input.pop();
+
+                if !is!(input.pop(); Punct '.') {
+                    return Err(input.error("`.` expected"));
+                }
+
+                let incl = if is!(input.peek(); Punct '=') {
+                    _ = input.pop();
+                    true
+                } else {
+                    false
+                };
+
+                let lit: Literal = input.parse()?;
+
+                let Ok(rhs) = parse_u128(&lit.to_string()) else {
+                    return Err(input.error(
+                        "end of range must be valid integer"
+                    ));
+                };
+
+                let rhs = if incl {
+                    rhs
+                } else if rhs > lhs {
+                    rhs - 1
+                } else {
+                    return Err(input.error(
+                        "end of exclusive range must be \
+                         greater than start of range"
+                    ));
+                };
+
+                Ok(Self {
+                    start: lhs,
+                    end: rhs,
+                })
+            },
+            _ => Ok(Self {
+                start: lhs,
+                end: lhs,
+            }),
         }
-    }
-}
-
-impl Parse for Values {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let mut values = Vec::new();
-
-        if input.peek(Token![_]) {
-            _ = input.parse::<Token![_]>()?;
-            return Ok(Self(values));
-        }
-
-        values.push(input.parse()?);
-
-        while input.peek(Token![|]) {
-            _ = input.parse::<Token![|]>()?;
-
-            values.push(input.parse()?);
-        }
-
-        Ok(Self(values))
-    }
-}
-
-impl Values {
-    pub fn take(self) -> Vec<Value> {
-        self.0
     }
 }
