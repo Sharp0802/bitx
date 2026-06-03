@@ -21,7 +21,7 @@ impl ToTokens for Error {
         let msg = self.message.as_ref();
 
         to.extend(quote_spanned! { self.span =>
-            ::core::compile_error!(#msg)
+            ::core::compile_error!(#msg);
         });
     }
 }
