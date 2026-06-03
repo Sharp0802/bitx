@@ -1,3 +1,5 @@
+use proc_macro2::Delimiter;
+
 use crate::prelude::*;
 use crate::tt::{Error, Input, Parse, Token};
 
@@ -26,23 +28,27 @@ impl<T> Block<T> {
 
 impl<T: Parse> Parse for Block<T> {
     fn parse(input: &mut Input) -> Result<Self, Error> {
-        if !is!(input.pop(); Punct '{') {
-            return Err(input.error("`{` expected"));
+        let group: Group = input.parse()?;
+        if group.delimiter() != Delimiter::Brace {
+            let span = group.delim_span().join();
+            return Err(Error::new("`{` and `}` are expected", span));
         }
 
-        if is!(input.peek(); Punct '}') {
-            return Ok(Self(Vec::new()));
-        }
+        let mut input: Input = group.stream().into();
 
         let mut ret = Vec::new();
         loop {
+            if is!(input.peek(); End) {
+                break;
+            }
+
             let item: T = input.parse()?;
             ret.push(item);
 
             tok! {
                 input.pop();
 
-                Punct '}' => break,
+                End => break,
                 Punct ',' => { /* continue */ },
                 _ => return Err(input.error("`}` or `,` expected")),
             }
