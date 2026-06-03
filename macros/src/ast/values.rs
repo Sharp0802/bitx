@@ -9,7 +9,7 @@ impl Parse for Values {
     fn parse(input: &mut Input) -> Result<Self, Error> {
         let mut values = Vec::new();
 
-        if is!(input.peek(); Punct '_') {
+        if is!(input.peek(); Ident "_") {
             _ = input.pop();
             return Ok(Self(values));
         }
