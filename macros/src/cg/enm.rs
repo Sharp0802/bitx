@@ -23,8 +23,7 @@ to_tokens!(for Enum; |self, tokens| {
 
     let expanded = quote! {
         #attr
-        #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-        #[repr(C, #repr)]
+        #[repr(#repr)]
         #vis enum #name {
             #(#defs),*
         }
