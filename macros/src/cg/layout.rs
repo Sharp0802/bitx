@@ -51,7 +51,10 @@ impl Layout {
             });
 
             let cvt = if !builtin {
-                quote! { <#ty>::__from_mask(val) }
+                quote! {
+                    let val = val as <#ty as ::bitx::Bits>::Mask;
+                    <#ty>::__from_mask(val)
+                }
             } else if self.size > 1 {
                 quote! { val as #ty }
             } else {
@@ -63,7 +66,7 @@ impl Layout {
             // TODO
             tokens.extend(quote! {
                 ::core::compile_error!(
-                    "unaligned nested custom type is not supported yet"
+                    "unaligned large custom types are not supported yet"
                 )
             });
         }
