@@ -8,9 +8,9 @@ impl Variant {
         let name = &self.name;
 
         if self.values.is_point() {
-            quote! { #attr #name(#mask) }
-        } else {
             quote! { #attr #name }
+        } else {
+            quote! { #attr #name(#mask) }
         }
     }
 
