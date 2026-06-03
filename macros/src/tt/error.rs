@@ -1,25 +1,27 @@
 use crate::prelude::*;
+use std::borrow::Cow;
 
 #[derive(Debug)]
 pub struct Error {
-    message: &'static str,
+    message: Cow<'static, str>,
     span: Span,
 }
 
 impl Error {
-    pub fn new(message: &'static str, span: Span) -> Self {
-        Self { message, span }
+    pub fn new<M: Into<Cow<'static, str>>>(message: M, span: Span) -> Self {
+        Self {
+            message: message.into(),
+            span,
+        }
     }
 }
 
 impl ToTokens for Error {
     fn to_tokens(&self, to: &mut TokenStream) {
-        let msg = self.message;
-        
-        to.extend(
-            quote_spanned! { self.span =>
-                ::core::compile_error!(#msg)
-            }
-        )
+        let msg = self.message.as_ref();
+
+        to.extend(quote_spanned! { self.span =>
+            ::core::compile_error!(#msg)
+        });
     }
 }
