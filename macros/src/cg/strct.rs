@@ -9,6 +9,8 @@ to_tokens!(for Struct; |self, tokens| {
     let vis = &self.vis;
     let fields = self.fields.iter();
 
+    let use_mask = self.mask.is_some();
+
     // NOTE: Cannot default mask to types other than integers;
     //       Defaulting to those types gives users really annoying errors.
     //
@@ -32,7 +34,7 @@ to_tokens!(for Struct; |self, tokens| {
     let quoted = quote! {
         #attr
         #[repr(C, packed)]
-        #vis struct #name([#t8; $bytes]);
+        #vis struct #name([#t8; #bytes]);
 
         const _: () = { #assert };
 
@@ -44,20 +46,9 @@ to_tokens!(for Struct; |self, tokens| {
         impl #name {
             #[inline]
             #[doc(hidden)]
-            #vis const unsafe fn __from_mask(mask: #mask_ty) -> Self{
+            #[cfg(#use_mask)]
+            #vis const fn __from_mask(mask: #mask_ty) -> Self {
                 let bytes = mask.to_be_bytes();
-                // SAFETY: If and only if mask is None, bytes > mask_bytes.
-                //         Thus this code will cause panic for large objects.
-                //         As follows, `__from_mask` should be marked as unsafe.
-                //         Safety of this function must be ensured from caller
-                //         (assertion of .mask.is_some() == true).
-                //
-                // NOTE:   Note that we cannot ensure this condition at here,
-                //         because we decided to default mask into `u128`
-                //         to suppress compilation errors unrelated to
-                //         direct reason.
-                //
-                //         See comment for `mask` variable also.
                 let from = bytes.split_at(#mask_bytes - #bytes).1;
 
                 let mut buf = [0u8; #bytes];
