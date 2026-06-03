@@ -9,7 +9,7 @@ pub struct Type(TokenStream);
 const fn itoa(buffer: &mut [u8; 11], mut size: u32) -> &str {
     buffer[0] = b'u';
 
-    let len = size.ilog10() as usize;
+    let len = size.ilog10() as usize + 1;
     let mut i = len;
     while i > 0 {
         buffer[i] = (size % 10) as u8 + b'0';
