@@ -4,6 +4,10 @@ use crate::prelude::*;
 
 impl Field {
     pub fn assert(&self, tokens: &mut TokenStream) {
+        if self.builtin {
+            return;
+        }
+
         let ty = &self.ty;
         let size = Literal::u32_unsuffixed(self.layout.size);
 
