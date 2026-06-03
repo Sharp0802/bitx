@@ -1,6 +1,8 @@
 use crate::prelude::*;
-use crate::tt::*;
+use crate::tt::{Error, Input, Parse, Token, is, parse_u128, tok};
+use std::fmt::{Display, Formatter};
 
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Value {
     pub start: u128,
     pub end: u128,
@@ -62,6 +64,47 @@ impl Parse for Value {
                 start: lhs,
                 end: lhs,
             }),
+        }
+    }
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.start == self.end {
+            write!(f, "{:#X}", self.start)
+        } else if self.end == u128::MAX {
+            write!(f, "{:#X}..", self.start)
+        } else if self.start == 0 {
+            write!(f, "..{:#X}", self.start)
+        } else {
+            let start = self.start;
+            let end = self.end + 1;
+            let width = start.ilog2().max(end.ilog2()).div_ceil(4) as usize;
+
+            write!(f, "{start:#0width$X}..{end:#0width$X}")
+        }
+    }
+}
+
+impl Value {
+    #[inline]
+    pub const fn adjoin(&self, other: &Self) -> bool {
+        other.start <= self.end.saturating_add(1)
+            && self.start <= other.end.saturating_add(1)
+    }
+
+    #[inline]
+    pub const fn overlap(&self, other: &Self) -> bool {
+        other.start <= self.end && self.start <= other.end
+    }
+
+    #[inline]
+    pub const fn merge(&mut self, other: &Self) {
+        if self.start > other.start {
+            self.start = other.start;
+        }
+        if self.end < other.end {
+            self.end = other.end;
         }
     }
 }

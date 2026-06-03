@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::*;
+use crate::tt::{Attr, Error, Input, Layout, Parse, Token, Type, Visibility};
 
 pub struct Field {
     pub attr: Attr,
@@ -33,4 +33,3 @@ impl Parse for Field {
         })
     }
 }
-

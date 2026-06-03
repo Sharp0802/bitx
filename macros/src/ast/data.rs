@@ -1,6 +1,6 @@
 use crate::ast::{Field, Variant};
-use crate::tt::*;
 use crate::prelude::*;
+use crate::tt::{Attr, Block, Error, Input, Parse, Token, Visibility};
 
 pub enum Body {
     Enum(Block<Variant>),
@@ -37,7 +37,10 @@ impl Parse for Data {
         let repr: Ident = input.parse()?;
         let repr_str = repr.to_string();
 
-        let Some(size) = repr_str.strip_prefix('u').and_then(|bits| bits.parse::<u32>().ok()) else {
+        let Some(size) = repr_str
+            .strip_prefix('u')
+            .and_then(|bits| bits.parse::<u32>().ok())
+        else {
             return Err(input.error("repr must be `uN` (e.g. u1, u8, etc.)"));
         };
 

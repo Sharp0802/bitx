@@ -1,18 +1,19 @@
 use crate::ast::Values;
-use crate::tt::*;
 use crate::prelude::*;
+use crate::tt::{Attr, Error, Input, Parse};
 
 pub struct Variant {
+    pub attr: Attr,
     pub name: Ident,
     pub values: Values,
 }
 
 impl Parse for Variant {
     fn parse(input: &mut Input) -> Result<Self, Error> {
+        let attr = input.parse()?;
         let values = input.parse()?;
         let name = input.parse()?;
 
-        Ok(Self { name, values })
+        Ok(Self { attr, name, values })
     }
 }
-
