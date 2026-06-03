@@ -88,11 +88,7 @@ impl TryFrom<Data> for Enum {
         let size = ast.size;
 
         let mask = Mask::new(size).ok_or_else(|| {
-            if size > 0 {
-                Error::new("enum cannot be larger than 128 bits", name.span())
-            } else {
-                Error::new("`u0` is not allowed", name.span())
-            }
+            Error::new("enum cannot be larger than 128 bits", name.span())
         })?;
 
         let max = if size == 128 {
