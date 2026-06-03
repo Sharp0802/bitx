@@ -1,0 +1,5 @@
+error: value of variant exceeds maximum value of enum (`3`)
+ --> tests/ui/enum.range.overstuffed.rs:5:18
+  |
+5 |         0..=4 => A, // upper bound 4 exceeds max 3 for u2
+  |                  ^

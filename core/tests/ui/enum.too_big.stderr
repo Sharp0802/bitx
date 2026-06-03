@@ -1,0 +1,5 @@
+error: enum cannot be larger than 128 bits
+ --> tests/ui/enum.too_big.rs:4:14
+  |
+4 |     pub enum TooBig: u129 {
+  |              ^^^^^^

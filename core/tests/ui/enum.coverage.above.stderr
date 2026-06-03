@@ -1,0 +1,5 @@
+error: enum has uncovered case: 3..=7
+ --> tests/ui/enum.coverage.above.rs:4:14
+  |
+4 |     pub enum GapAbove: u3 {
+  |              ^^^^^^^^

@@ -1,0 +1,5 @@
+error: enum has conflict default
+ --> tests/ui/enum.conflict.default.rs:7:14
+  |
+7 |         _ => C,
+  |              ^

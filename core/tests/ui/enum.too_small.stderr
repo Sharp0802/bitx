@@ -1,0 +1,5 @@
+error: cannot be zero sized
+ --> tests/ui/enum.too_small.rs:4:14
+  |
+4 |     pub enum TooSmall: u0 {
+  |              ^^^^^^^^
