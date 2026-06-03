@@ -3,13 +3,13 @@
 
 /// Defines a structure with precise bit-level and byte-level fields.
 ///
-/// For structs, this macro generates a `#[repr(C)]` struct
+/// For structs, this macro generates a `#[repr(C, packed)]` struct
 /// backed by a tightly packed `[u8; N]` array,
 /// along with constant-time getter methods for extracting
 /// sub-byte, unaligned, or standard fields.
 ///
 /// For enums, it generates a `#[repr(uN)]` enum (up to 128 bits)
-/// with strongly typed variants, safely parsing underlying bit patters
+/// with strongly typed variants, safely parsing underlying bit patterns
 /// and ensuring exhaustive coverage of all possible states.
 ///
 /// # Syntax
@@ -24,19 +24,20 @@
 /// use bitx::bits;
 ///
 /// bits! {
-///     /// Optional documentation and attributes for the struct
-///     pub struct Header: 4.4 { // Total size = 4.4 = 4 bytes + 4 bits
-///         /// Flag indicating active status
-///         0.0 pub is_active: u1, // 1-bit fiels return `bool`
+///     /// Outer attributes are supported
+///     pub struct Header: u36 { // 36 bits struct
+///         // 1-bit fields automatically return `bool`
+///         0.0;01 pub is_active,
 ///
-///         /// A 3-bit status code
-///         0.1 pub status: u3, // Custom bit-widths are supported
+///         // Custom nested types are supported
+///         0.1;03 pub state: State,
 ///
-///         /// Standard aligned field
-///         1 pub payload: u16, // Bit offset defaults to 0
+///         // 20-bit integer; custom bit-widths are supported
+///         1.0;20 pub(crate) payload,
 ///
-///         /// Unaligned cross-byte field
-///         3.4 checksum: u8,
+///         // Unaligned cross-byte field
+///         #[allow(dead_code)]
+///         3.4;08 checksum,
 ///     }
 /// }
 /// ```
@@ -51,37 +52,22 @@
 /// use bitx::bits;
 ///
 /// bits! {
-///     /// A 2-bit state enumeration
-///     pub enum State: 0.2 {
-///         0 Inactive,
-///         1 Active,
-///         2 Error,
-///         _ Unknown, // Default fallback for unmapped bit patterns
+///     pub enum State: u3 {
+///         0         => Inactive,
+///         1         => Active,
+///         2 | 6..=7 => Error,   // Arbitrary bit patterns
+///         _         => Unknown, // Default fallback for unmapped bit patterns
 ///     }
 /// }
 /// ```
 ///
-/// # Offsets
+/// # Layouts
 ///
-/// Offsets for the total struct size and
-/// individual fields use a `<byte>.<bit>` format:
+/// Layouts for individual fields use a `<byte>.<bit>;<size>` format:
 ///
 /// - `byte`: The byte offset.
 /// - `bit`: The bit offset within the byte. Must be between 0 and 7.
-///
-/// If a field starts precisely on a byte boundary,
-/// the `.0` suffix is optional
-/// (e.g., `4` is equivalent to `4.0`).
-///
-/// # Types
-///
-/// Fields can be defined using standard or
-/// custom bit-width primitives:
-///
-/// - `u1`: Treated as a boolean flag.
-/// - `u2` to `u128`: Custom bit-width integers.
-/// - `T`: Custom types are supported if created with `bits!` macro.
-///   Unaligned reads for nested types are supported up to 128 bits.
+/// - `size`: The size of the field, in bits.
 ///
 /// # Generated API
 ///

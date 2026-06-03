@@ -18,33 +18,35 @@ Note that **Big-Endian / MSB-0** is used.
 use bitx::bits;
 
 bits! {
-    pub struct Header: 4.4 { // size in `byte.bit` notation (so 36-bit)
-        // 1-bit fields automatically return `bool`
-        0.0 pub is_active: u1,
+    /// Outer attributes are supported
+    pub enum State: u3 {
+        #[allow(dead_code)]
+        0         => Inactive,
+        1         => Active,
+        2 | 6..=7 => Error,   // Arbitrary bit patterns
+        _         => Unknown, // Default fallback for unmapped bit patterns
+    }
+}
 
-        // Custom bit-widths are supported
-        0.1 pub status: u3,
-        
-        // The `.0` bit offset can be omitted.
-        1 pub payload: u16,
+bits! {
+    pub struct Header: u36 { 
+        // 1-bit fields automatically return `bool`
+        0.0;01 pub is_active,
+
+        // Custom nested types are supported
+        0.1;03 pub state: State,
+
+        // 20-bit integer; custom bit-widths are supported
+        1.0;20 pub(crate) payload,
 
         // Unaligned cross-byte field
-        3.4 checksum: u8,
+        3.4;08 checksum,
     }
 }
 ```
 
 ```rust
 use bitx::bits;
-
-bits! {
-    pub enum State: 0.2 { // 2-bit enum
-        0 Inactive,
-        1 Active,
-        2 Error,
-        _ Unknown, // Default fallback for unmapped bit patterns
-    }
-}
 ```
 
 See [docs.rs](https://docs.rs/bitx/latest/bitx/macro.bits.html)
@@ -60,4 +62,3 @@ This project is licensed under either of
   <https://opensource.org/licenses/MIT>)
 
 at your option.
-
