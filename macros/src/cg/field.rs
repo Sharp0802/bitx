@@ -26,15 +26,16 @@ to_tokens!(for Field; |self, tokens| {
     let name = &self.name;
     let vis = &self.vis;
     let attr = &self.attr;
+    let ty = &self.ty;
 
     let mut body = TokenStream::new();
     self.assert(&mut body);
-    self.layout.quote_read(&self.ty, self.builtin, &mut body);
+    self.layout.quote_read(ty, self.builtin, &mut body);
 
     let getter = quote! {
         #attr
         #[inline]
-        #vis const fn #name(&self) {
+        #vis const fn #name(&self) -> #ty {
             #body
         }
     };
