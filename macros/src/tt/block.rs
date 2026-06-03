@@ -57,3 +57,53 @@ impl<T: Parse> Parse for Block<T> {
         Ok(Self(ret))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_block() {
+        let ts = quote!({});
+        let mut input = Input::from(ts);
+        let block: Block<Ident> = input.parse().unwrap();
+        assert!(block.is_empty());
+    }
+
+    #[test]
+    fn parses_multiple_items() {
+        let ts = quote!({ a, b, c });
+        let mut input = Input::from(ts);
+        let block: Block<Ident> = input.parse().unwrap();
+        let names: Vec<String> =
+            block.iter().map(ToString::to_string).collect();
+        assert_eq!(names, vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn trailing_comma_ok() {
+        let ts = quote!({ a, b, });
+        let mut input = Input::from(ts);
+        let block: Block<Ident> = input.parse().unwrap();
+        let names: Vec<String> =
+            block.iter().map(ToString::to_string).collect();
+        assert_eq!(names, vec!["a", "b"]);
+    }
+
+    #[test]
+    fn wrong_delimiter_rejected() {
+        // Parens instead of braces
+        let ts = quote!((a));
+        let mut input = Input::from(ts);
+        let result: Result<Block<Ident>, _> = input.parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn missing_separator_rejected() {
+        let ts = quote!({ a b });
+        let mut input = Input::from(ts);
+        let result: Result<Block<Ident>, _> = input.parse();
+        assert!(result.is_err());
+    }
+}

@@ -71,3 +71,56 @@ impl_parse!(
     Group "a group",
     Literal "a literal",
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proc_macro2::Delimiter;
+
+    #[test]
+    fn ident_parses() {
+        let ts = quote!(foo);
+        let mut input = Input::from(ts);
+        let ident: Ident = input.parse().unwrap();
+        assert_eq!(ident.to_string(), "foo");
+    }
+
+    #[test]
+    fn ident_rejects_punct() {
+        let ts = quote!('+');
+        let mut input = Input::from(ts);
+        let result: Result<Ident, _> = input.parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn punct_rejects_ident() {
+        let ts = quote!(foo);
+        let mut input = Input::from(ts);
+        let result: Result<Punct, _> = input.parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn literal_rejects_ident() {
+        let ts = quote!(foo);
+        let mut input = Input::from(ts);
+        let result: Result<Literal, _> = input.parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn group_parses_braces() {
+        let ts = quote!({ a, b });
+        let mut input = Input::from(ts);
+        let group: Group = input.parse().unwrap();
+        assert_eq!(group.delimiter(), Delimiter::Brace);
+    }
+
+    #[test]
+    fn from_tt_for_end() {
+        let opt: Option<TokenTree> = None;
+        let tok: Token = opt.into();
+        assert!(matches!(tok, Token::End));
+    }
+}

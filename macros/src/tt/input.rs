@@ -67,3 +67,69 @@ impl From<TokenStream> for Input {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn peek_does_not_advance() {
+        let ts = quote!(a b c);
+        let mut input = Input::from(ts);
+        let _ = input.peek();
+        let _ = input.peek();
+        let ident: Ident = input.parse().unwrap();
+        assert_eq!(ident.to_string(), "a");
+    }
+
+    #[test]
+    fn pop_advances() {
+        let ts = quote!(a b);
+        let mut input = Input::from(ts);
+        let first: Ident = input.parse().unwrap();
+        assert_eq!(first.to_string(), "a");
+        let second: Ident = input.parse().unwrap();
+        assert_eq!(second.to_string(), "b");
+    }
+
+    #[test]
+    fn end_after_consumption() {
+        let ts = quote!(a);
+        let mut input = Input::from(ts);
+        let _first: Ident = input.parse().unwrap();
+        let end = input.pop();
+        assert!(matches!(end, Token::End));
+    }
+
+    #[test]
+    fn end_for_empty() {
+        let ts = quote!();
+        let mut input = Input::from(ts);
+        assert!(matches!(input.pop(), Token::End));
+    }
+
+    #[test]
+    fn error_poisons_input() {
+        let ts = quote!(a);
+        let mut input = Input::from(ts);
+        let _ = input.error("boom");
+        // Calling pop after error panics.
+        let result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let mut i = input;
+                let _ = i.pop();
+            }));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_chains() {
+        // Two parses on the same input should advance through it.
+        let ts = quote!(a b);
+        let mut input = Input::from(ts);
+        let first: Ident = input.parse().unwrap();
+        assert_eq!(first.to_string(), "a");
+        let second: Ident = input.parse().unwrap();
+        assert_eq!(second.to_string(), "b");
+    }
+}

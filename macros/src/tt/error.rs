@@ -14,6 +14,11 @@ impl Error {
             span,
         }
     }
+
+    #[cfg(test)]
+    pub fn message(&self) -> &str {
+        &self.message
+    }
 }
 
 impl ToTokens for Error {

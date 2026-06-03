@@ -130,3 +130,157 @@ impl TryFrom<Data> for Enum {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::Data;
+    use crate::tt::Input;
+
+    /// Build a `ast::Data` from a token stream that looks like the
+    /// body of a `bits!` invocation (i.e. after the `: uN` token).
+    fn parse_enum(name: &str, size: u32, body: &TokenStream) -> Data {
+        let source = format!("enum {name} : u{size} {body}");
+        let ts: TokenStream = source.parse().expect("source should tokenize");
+        let mut input: Input = ts.into();
+        input.parse().expect("ast::Data should parse")
+    }
+
+    fn err_of(data: Data) -> Error {
+        Enum::try_from(data)
+            .err()
+            .expect("expected error, got success")
+    }
+
+    fn assert_err_contains(data: Data, needle: &str) {
+        let err = err_of(data);
+        let msg = err.message();
+        assert!(
+            msg.contains(needle),
+            "expected message to contain {needle:?}, got: {msg}",
+        );
+    }
+
+    #[test]
+    fn full_coverage() {
+        let data = parse_enum(
+            "E",
+            2,
+            &quote!({
+                0 => A,
+                1 => B,
+                2 => C,
+                3 => D,
+            }),
+        );
+        let enm = Enum::try_from(data).expect("full coverage should succeed");
+        assert_eq!(enm.size, 2);
+    }
+
+    #[test]
+    fn default_allows_gap() {
+        let data = parse_enum(
+            "E",
+            4,
+            &quote!({
+                0..=2 => A,
+                3 => B,
+                _ => Rest,
+            }),
+        );
+        let _ = Enum::try_from(data)
+            .expect("default variant should make the rest implicit");
+    }
+
+    #[test]
+    fn conflict_default() {
+        let data = parse_enum(
+            "E",
+            2,
+            &quote!({
+                0 => A,
+                _ => B,
+                _ => C,
+            }),
+        );
+        assert_err_contains(data, "conflict default");
+    }
+
+    #[test]
+    fn zero_variants() {
+        let data = parse_enum("E", 2, &quote!({}));
+        assert_err_contains(data, "zero-variant");
+    }
+
+    #[test]
+    fn too_big() {
+        let data = parse_enum("E", 129, &quote!({ 0 => A }));
+        assert_err_contains(data, "larger than 128");
+    }
+
+    #[test]
+    fn overlap_rejected() {
+        let data = parse_enum(
+            "E",
+            3,
+            &quote!({
+                0..=3 => A,
+                2..=4 => B,
+            }),
+        );
+        assert_err_contains(data, "overlap");
+    }
+
+    #[test]
+    fn value_exceeds_max() {
+        let data = parse_enum("E", 2, &quote!({ 5 => A }));
+        assert_err_contains(data, "exceeds");
+    }
+
+    #[test]
+    fn range_exceeds_max() {
+        let data = parse_enum("E", 2, &quote!({ 0..=4 => A }));
+        assert_err_contains(data, "exceeds");
+    }
+
+    #[test]
+    fn coverage_gap_below() {
+        let data = parse_enum(
+            "E",
+            3,
+            &quote!({
+                2..=2 => A,
+                3..=3 => B,
+                4..=4 => C,
+            }),
+        );
+        assert_err_contains(data, "uncovered case");
+    }
+
+    #[test]
+    fn coverage_gap_above() {
+        let data = parse_enum(
+            "E",
+            3,
+            &quote!({
+                0 => A,
+                1 => B,
+                2 => C,
+            }),
+        );
+        assert_err_contains(data, "uncovered case");
+    }
+
+    #[test]
+    fn coverage_gap_middle() {
+        let data = parse_enum(
+            "E",
+            4,
+            &quote!({
+                0..=1 => A,
+                4..=7 => B,
+            }),
+        );
+        assert_err_contains(data, "uncovered case");
+    }
+}
