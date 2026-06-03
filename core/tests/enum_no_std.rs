@@ -6,10 +6,10 @@ use bitx::bits;
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum PowerState: u2 {
-        0 Off,
-        1 Sleep,
-        2 Standby,
-        3 On,
+        0 => Off,
+        1 => Sleep,
+        2 => Standby,
+        3 => On,
     }
 }
 

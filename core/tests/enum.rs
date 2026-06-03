@@ -5,10 +5,10 @@ use bitx::bits;
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum Power: u2 {
-        0 Off,
-        1 Sleep,
-        2 Standby,
-        3 On,
+        0 => Off,
+        1 => Sleep,
+        2 => Standby,
+        3 => On,
     }
 }
 
@@ -29,9 +29,9 @@ fn test_coverage() {
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum Status: u3 {
-        1 Active,
-        2 Paused,
-        _ Unknown,
+        1 => Active,
+        2 => Paused,
+        _ => Unknown,
     }
 }
 
@@ -52,9 +52,9 @@ fn test_fallback() {
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum State: u3 {
-        1..3 | 7 Active,
-        4 | 3..=5 Error,
-        _ Unknown,
+        1..3 | 7  => Active,
+        4 | 3..=5 => Error,
+        _         => Unknown,
     }
 }
 

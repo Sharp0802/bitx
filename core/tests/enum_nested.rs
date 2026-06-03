@@ -5,19 +5,19 @@ use bitx::bits;
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum PowerState: u2 {
-        0 Off,
-        1 Sleep,
-        2 Standby,
-        3 On,
+        0 => Off,
+        1 => Sleep,
+        2 => Standby,
+        3 => On,
     }
 }
 
 bits! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum Status: u3 {
-        1 Active,
-        2 Paused,
-        _ Unknown,
+        1 => Active,
+        2 => Paused,
+        _ => Unknown,
     }
 }
 
