@@ -27,4 +27,3 @@ pedantic = "warn"
 nursery = "warn"
 min_ident_chars = "warn"
 must_use_candidate = "warn"
-
