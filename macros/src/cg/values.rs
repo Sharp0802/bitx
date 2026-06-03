@@ -4,5 +4,5 @@ use crate::prelude::*;
 
 to_tokens!(for Values; |self, tokens| {
     let iter = self.iter();
-    tokens.extend(quote!{ #(#iter)|* });
+    tokens.extend(quote!{ ( #(#iter)|* ) });
 });
