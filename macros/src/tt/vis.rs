@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::*;
+use crate::tt::{Error, Input, Parse, Token};
 
 pub struct Visibility {
     public: bool,
@@ -10,7 +10,7 @@ impl Parse for Visibility {
     fn parse(input: &mut Input) -> Result<Self, Error> {
         tok! {
             input.peek();
-            
+
             Ident "pub" => {
                 _ = input.pop();
             },
@@ -24,7 +24,10 @@ impl Parse for Visibility {
             _ => return Ok(Self { public: true, inner: None }),
         };
 
-        Ok(Self { public: true, inner: Some(group) })
+        Ok(Self {
+            public: true,
+            inner: Some(group),
+        })
     }
 }
 
@@ -45,13 +48,13 @@ impl ToTokens for Visibility {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_public() {
         let ts = quote!(pub);
         let mut input: Input = ts.into();
         let vis: Visibility = input.parse().unwrap();
-        
+
         assert!(vis.public);
         assert!(vis.inner.is_none());
     }
@@ -61,7 +64,7 @@ mod tests {
         let ts = quote!(pub(crate));
         let mut input: Input = ts.into();
         let vis: Visibility = input.parse().unwrap();
-        
+
         assert!(vis.public);
         assert!(vis.inner.is_some());
     }
@@ -71,7 +74,7 @@ mod tests {
         let ts = quote!();
         let mut input: Input = ts.into();
         let vis: Visibility = input.parse().unwrap();
-        
+
         assert!(!vis.public);
         assert!(vis.inner.is_none());
     }

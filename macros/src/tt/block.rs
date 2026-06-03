@@ -1,15 +1,11 @@
-use crate::tt::*;
+use crate::prelude::*;
+use crate::tt::{Error, Input, Parse, Token};
 
 pub struct Block<T>(Vec<T>);
 
 impl<T> Block<T> {
     #[inline]
-    pub const fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    #[inline]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
@@ -38,12 +34,12 @@ impl<T: Parse> Parse for Block<T> {
         loop {
             let item: T = input.parse()?;
             ret.push(item);
-            
+
             tok! {
                 input.pop();
 
                 Punct '}' => break,
-                Punct ',' => continue,
+                Punct ',' => { /* continue */ },
                 _ => return Err(input.error("`}` or `,` expected")),
             }
         }
@@ -51,4 +47,3 @@ impl<T: Parse> Parse for Block<T> {
         Ok(Self(ret))
     }
 }
-

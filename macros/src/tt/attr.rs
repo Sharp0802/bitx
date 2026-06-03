@@ -1,5 +1,5 @@
-use crate::tt::*;
 use crate::prelude::*;
+use crate::tt::{Error, Input, Parse, Token};
 
 pub struct Attr(TokenStream);
 
@@ -28,7 +28,7 @@ impl Parse for Attr {
         Ok(Self(attr))
     }
 }
-            
+
 impl ToTokens for Attr {
     fn to_tokens(&self, to: &mut TokenStream) {
         to.extend(self.0.clone());
@@ -44,10 +44,10 @@ mod tests {
         let ts = quote!(#[derive(Debug, Clone)]);
         let mut input: Input = ts.clone().into();
         let attr: Attr = input.parse().unwrap();
-        
+
         let mut out = TokenStream::new();
         attr.to_tokens(&mut out);
-        
+
         assert_eq!(out.to_string(), ts.to_string());
     }
 
@@ -59,26 +59,28 @@ mod tests {
             #[cfg(target_os = "linux")]
         };
         let mut input: Input = ts.clone().into();
-        
+
         let attr: Attr = input.parse().unwrap();
-        
+
         let mut out = TokenStream::new();
         attr.to_tokens(&mut out);
-        
+
         assert_eq!(out.to_string(), ts.to_string());
     }
 
     #[test]
     fn test_no_attr() {
-        let ts = quote!(pub struct MyStruct;);
+        let ts = quote!(
+            pub struct MyStruct;
+        );
         let mut input: Input = ts.into();
-        
+
         let attr: Attr = input.parse().unwrap();
-        
+
         let mut out = proc_macro2::TokenStream::new();
-        attr.to_tokens(&mut out);  
+        attr.to_tokens(&mut out);
         assert!(out.is_empty());
-        
+
         assert!(is!(input.peek(); Ident "pub"));
     }
 
@@ -86,7 +88,7 @@ mod tests {
     fn test_malformed() {
         let ts: TokenStream = "# pub struct".parse().unwrap();
         let mut input = Input::from(ts);
-        
+
         assert!(input.parse::<Attr>().is_err());
     }
 }

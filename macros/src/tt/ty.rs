@@ -1,7 +1,75 @@
 use crate::prelude::*;
-use crate::tt::*;
+use crate::tt::{Error, Input, Parse, Token};
 
+#[derive(Clone)]
 pub struct Type(TokenStream);
+
+// NOTE: maximum length of 32-bit unsigned integer is 10 in base 10.
+#[inline]
+const fn itoa(buffer: &mut [u8; 11], mut size: u32) -> &str {
+    buffer[0] = b'u';
+
+    let len = size.ilog10() as usize;
+    let mut i = len;
+    while i > 0 {
+        buffer[i] = (size % 10) as u8 + b'0';
+        size /= 10;
+        i -= 1;
+    }
+
+    let slice = buffer.split_at(len + 1).0;
+
+    // SAFETY: 1. b'u' is a valid ASCII.
+    //         2. b'0' + x (where 0 <= x < 10) is a valid ASCII.
+    let Ok(str) = ::core::str::from_utf8(slice) else {
+        unreachable!();
+    };
+
+    str
+}
+
+impl Type {
+    #[inline]
+    fn literal_tokens(size: u32, span: Span) -> [TokenTree; 9] {
+        let mut buffer = [0u8; 11];
+        let name = itoa(&mut buffer, size);
+
+        [
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new("core", span)),
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new("primitive", span)),
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new(name, span)),
+        ]
+    }
+
+    pub fn literal(size: u32) -> Self {
+        let mut ts = TokenStream::new();
+        ts.extend(Self::literal_tokens(size, Span::call_site()));
+
+        Self(ts)
+    }
+
+    pub fn boolean() -> Self {
+        let span = Span::call_site();
+
+        Self(TokenStream::from_iter([
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new("core", span)),
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new("primitive", span)),
+            TokenTree::Punct(Punct::new(':', Spacing::Joint)),
+            TokenTree::Punct(Punct::new(':', Spacing::Alone)),
+            TokenTree::Ident(Ident::new("bool", span)),
+        ]))
+    }
+}
 
 impl Parse for Type {
     fn parse(input: &mut Input) -> Result<Self, Error> {
@@ -56,7 +124,7 @@ impl ToTokens for Type {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test() {
         let ts = quote!(std::collections::HashMap<String, u32>);

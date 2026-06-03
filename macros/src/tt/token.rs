@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::*;
+use crate::tt::{Error, Input, Parse};
 
 #[derive(Debug, Clone)]
 pub enum Token {
@@ -35,10 +35,7 @@ impl From<TokenTree> for Token {
 
 impl From<Option<TokenTree>> for Token {
     fn from(value: Option<TokenTree>) -> Self {
-        match value {
-            Some(tt) => tt.into(),
-            None => Self::End,
-        }
+        value.map_or_else(|| Self::End, Into::into)
     }
 }
 
@@ -49,7 +46,7 @@ impl ToTokens for Token {
             Self::Punct(val) => val.to_tokens(to),
             Self::Group(val) => val.to_tokens(to),
             Self::Literal(val) => val.to_tokens(to),
-            Self::End => {},
+            Self::End => {}
         }
     }
 }

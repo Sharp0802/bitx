@@ -1,6 +1,6 @@
 use crate::prelude::*;
+use crate::tt::{Error, Token};
 use proc_macro2::token_stream::IntoIter;
-use crate::tt::*;
 
 pub trait Parse: Sized {
     fn parse(input: &mut Input) -> Result<Self, Error>;
@@ -23,9 +23,7 @@ impl Input {
 
     #[inline]
     pub fn peek(&mut self) -> &Token {
-        if self.error {
-            panic!("input has been poisoned");
-        }
+        assert!(!self.error, "input has been poisoned");
 
         if self.buffer.is_none() {
             self.buffer = Some(self.next_raw());
@@ -36,9 +34,7 @@ impl Input {
 
     #[inline]
     pub fn pop(&mut self) -> Token {
-        if self.error {
-            panic!("input has been poisoned");
-        }
+        assert!(!self.error, "input has been poisoned");
 
         if let Some(item) = self.buffer.take() {
             return item;

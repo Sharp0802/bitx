@@ -1,4 +1,5 @@
-use crate::tt::*;
+use crate::prelude::*;
+use crate::tt::{Error, Input, Parse, Token, parse_u32};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Layout {
@@ -21,7 +22,7 @@ impl Parse for Layout {
             let (bytes, bits) = if let Some(del) = str.find('.') {
                 // byte offset has no prefix: 0.0, 1.5, ...
 
-                (parse_u32(&str[..del]), parse_u32(&str[(del + 1)..]))        
+                (parse_u32(&str[..del]), parse_u32(&str[(del + 1)..]))
             } else {
                 // byte offset has prefix: 0x0.0, 0o1.5, ...
 
@@ -43,12 +44,12 @@ impl Parse for Layout {
                 (Err(_), _) => {
                     return Err(Error::new(
                         "byte offset must be valid integer",
-                        lit.span()
+                        lit.span(),
                     ));
-                },
+                }
                 (_, Err(_)) => {
                     return Err(input.error("bit offset must be valid integer"));
-                },
+                }
 
                 (Ok(bytes), Ok(bits)) => (bytes, bits),
             };
@@ -87,7 +88,6 @@ impl Parse for Layout {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::*;
 
     #[test]
     fn test() {
