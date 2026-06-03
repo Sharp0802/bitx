@@ -46,9 +46,8 @@ to_tokens!(for Enum; |self, tokens| {
             #[inline]
             #vis const fn from_array(val: [#t8; #bytes]) -> Self {
                 let mut buffer = [0u8; #mask_bytes];
-                buffer
-                    .split_at_mut(#mask_bytes - #bytes).1
-                    .copy_from_slice(&val);
+                let into = buffer.split_at_mut(#mask_bytes - #bytes).1;
+                ::bitx::copy(into, &val);
                 Self::__from_mask(#mask_ty::from_be_bytes(buffer))
             }
 
@@ -57,12 +56,13 @@ to_tokens!(for Enum; |self, tokens| {
                 -> core::option::Option<Self>
             {
                 let buffer = if val.len() >= #mask_bytes {
-                    val.split_at(#mask_bytes).0.try_into().unwrap()
+                    let mut buffer = [0u8; #mask_bytes];
+                    ::bitx::copy(&mut buffer, val.split_at(#mask_bytes).0);
+                    buffer
                 } else if val.len() >= #bytes {
                     let mut buffer = [0u8; #mask_bytes];
-                    buffer
-                        .split_at_mut(#mask_bytes - #bytes).1
-                        .copy_from_slice(val.split_at(#bytes).0);
+                    let into = buffer.split_at_mut(#mask_bytes - #bytes).1;
+                    ::bitx::copy(into, val.split_at(#bytes).0);
                     buffer
                 } else {
                     return core::option::Option::None;

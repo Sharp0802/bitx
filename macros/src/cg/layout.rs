@@ -22,7 +22,7 @@ impl Layout {
             let cvt = if builtin {
                 quote! {
                     let mut buffer = [0u8; #read_size];
-                    buffer.copy_from_slice(from);
+                    ::bitx::copy(&mut buffer, from);
 
                     <#ty>::from_be_bytes(buffer)
                 }
@@ -42,8 +42,8 @@ impl Layout {
                     .split_at(#read_offset).1
                     .split_at(#read_size).0;
 
-                let buffer = [0u8; #read_size];
-                buffer.copy_from_slice(from);
+                let mut buffer = [0u8; #read_size];
+                ::bitx::copy(&mut buffer, from);
 
                 let mut val = <#mask>::from_be_bytes(buffer);
                 val >>= #shr;

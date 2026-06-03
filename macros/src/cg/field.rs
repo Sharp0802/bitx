@@ -6,19 +6,14 @@ impl Field {
     pub fn assert(&self, tokens: &mut TokenStream) {
         let ty = &self.ty;
         let size = Literal::u32_unsuffixed(self.layout.size);
-        let offset = Literal::u32_unsuffixed(self.layout.offset);
 
         let err = format!(
-            "field `{}` has incompatible size ({}-bit) with its type ({{}}-bit)",
-            self.name, self.layout.size,
+            "field `{}` has incompatible size with its type",
+            self.name,
         );
 
         tokens.extend(quote! {
-            ::core::assert!(
-                #offset + <#ty as ::bitx::Bits>::BITS <= #size,
-                #err,
-                <#ty as ::bitx::Bits>::BITS,
-            );
+            ::core::assert!(<#ty as ::bitx::Bits>::BITS == #size, #err);
         });
     }
 }

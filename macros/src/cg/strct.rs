@@ -61,7 +61,7 @@ to_tokens!(for Struct; |self, tokens| {
                 let from = bytes.split_at(#mask_bytes - #bytes).1;
 
                 let mut buf = [0u8; #bytes];
-                buf.copy_from_slice(from);
+                ::bitx::copy(&mut buf, from);
 
                 Self(buf)
             }
