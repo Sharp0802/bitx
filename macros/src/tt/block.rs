@@ -5,6 +5,10 @@ pub struct Block<T>(Vec<T>);
 
 impl<T> Block<T> {
     #[inline]
+    #[allow(
+        clippy::missing_const_for_fn,
+        reason = "const fn of `Vec::is_empty` was not stablized at MSRV 1.85"
+    )]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }

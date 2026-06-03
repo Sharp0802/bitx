@@ -16,6 +16,10 @@ impl From<tt::Layout> for Layout {
         let offset = value.offset;
         let size = value.size;
 
+        #[allow(
+            clippy::manual_is_multiple_of,
+            reason = "it was not stablized at MSRV 1.85"
+        )]
         let aligned = offset % 8 == 0 && size % 8 == 0;
 
         let read_offset_bytes = offset / 8;
