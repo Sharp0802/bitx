@@ -18,10 +18,12 @@
 /// the total size and the exact placement of each field
 /// or enum variants:
 ///
-/// ### Structs
-///
 /// ```rust
 /// use bitx::bits;
+///
+/// /*
+///  * ## Structs
+///  */
 ///
 /// bits! {
 ///     /// Outer attributes are supported
@@ -40,16 +42,14 @@
 ///         3.4;08 checksum,
 ///     }
 /// }
-/// ```
 ///
-/// ### Enums
-///
-/// Enums map specific bit patterns to variants.
-/// You must define the bit size,
-/// and the macro ensures the enum is not less-covered/overstuffed.
-///
-/// ```rust
-/// use bitx::bits;
+/// /*
+///  * ## Enums
+///  *
+///  * Enums map specific bit patterns to variants.
+///  * You must define the bit size,
+///  * and the macro ensures the enum is not less-covered/overstuffed.
+///  */
 ///
 /// bits! {
 ///     pub enum State: u3 {
