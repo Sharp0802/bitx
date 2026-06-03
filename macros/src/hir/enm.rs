@@ -111,6 +111,7 @@ impl TryFrom<Data> for Enum {
         check_range(&variants, max)?;
 
         let mut defaults = variants.iter().filter(|var| var.values.is_empty());
+        let has_default = defaults.next().is_some();
 
         if let Some(other) = defaults.next() {
             return Err(Error::new(
@@ -119,7 +120,6 @@ impl TryFrom<Data> for Enum {
             ));
         }
 
-        let has_default = defaults.next().is_some();
         if !has_default {
             check_coverage(&variants, max, &name)?;
         }
