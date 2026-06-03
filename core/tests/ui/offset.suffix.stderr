@@ -1,0 +1,5 @@
+error: bit offset must be valid integer
+ --> tests/ui/offset.suffix.rs:5:9
+  |
+5 |         0.0u8;1 pub flag, // suffixes are not allowed
+  |         ^^^^^

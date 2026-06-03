@@ -1,0 +1,5 @@
+error: bit offset must be in 0-7
+ --> tests/ui/offset.invalid.rs:5:9
+  |
+5 |         0.8;1 pub flag: u1, // bit must be 0-7
+  |         ^^^

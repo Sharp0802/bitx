@@ -1,0 +1,5 @@
+error: value of variant exceeds maximum value of enum (`3`)
+ --> tests/ui/enum.overstuffed.rs:9:11
+  |
+9 |         4 V4,
+  |           ^^
