@@ -20,7 +20,10 @@ impl TryFrom<Data> for Struct {
             panic!("struct expected");
         };
 
-        let fields: Vec<Field> = fields.into_iter().map(Into::into).collect();
+        let fields: Vec<Field> = fields
+            .into_iter()
+            .map(TryInto::try_into)
+            .collect::<Result<_, _>>()?;
 
         for field in &fields {
             if field.layout.offset + field.layout.size > ast.size {
