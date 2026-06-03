@@ -1,0 +1,39 @@
+use crate::hir::Mask;
+use crate::tt;
+
+pub struct Layout {
+    pub offset: u32,
+    pub size: u32,
+    pub aligned: bool,
+    pub read_offset_bytes: usize,
+    pub read_bytes: usize,
+    pub shr: u32,
+    pub mask: Option<Mask>,
+}
+
+impl From<tt::Layout> for Layout {
+    fn from(value: tt::Layout) -> Self {
+        let offset = value.offset;
+        let size = value.size;
+
+        let aligned = offset % 8 == 0 && size % 8 == 0;
+
+        let read_offset_bytes = offset / 8;
+        let read_bytes = (offset % 8 + size).div_ceil(8);
+
+        let shr = read_bytes * 8 - offset % 8 - size;
+
+        // NOTE: mask.size * 8 == read_bytes;
+        let mask = Mask::new(read_bytes * 8);
+
+        Self {
+            offset,
+            size,
+            aligned,
+            read_offset_bytes: read_offset_bytes as usize,
+            read_bytes: read_bytes as usize,
+            shr,
+            mask,
+        }
+    }
+}

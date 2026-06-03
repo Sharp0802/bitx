@@ -1,5 +1,6 @@
+use crate::ast::{self, Body};
 use crate::hir::{Enum, Struct};
-use crate::prelude::*;
+use crate::tt::Error;
 
 pub enum Data {
     Enum(Enum),
@@ -9,10 +10,8 @@ pub enum Data {
 impl TryFrom<ast::Data> for Data {
     type Error = Error;
 
-    fn try_from(ast: ast::Data) -> Result<Self> {
-        let is_enum = matches!(&ast.body, ast::Body::Variants(_));
-
-        if is_enum {
+    fn try_from(ast: ast::Data) -> Result<Self, Error> {
+        if matches!(&ast.body, Body::Enum(_)) {
             Ok(Self::Enum(ast.try_into()?))
         } else {
             Ok(Self::Struct(ast.try_into()?))

@@ -1,86 +1,38 @@
-use crate::hir::Mask;
+use crate::ast;
+use crate::hir::Layout;
 use crate::prelude::*;
-use std::boxed::Box;
-
-pub enum Kind {
-    Literal(Offset),
-    Custom(Box<Type>),
-}
+use crate::tt::{Attr, Type, Visibility};
 
 pub struct Field {
-    pub attrs: Vec<Attribute>,
+    pub attr: Attr,
+    pub layout: Layout,
     pub vis: Visibility,
     pub name: Ident,
-    pub offset: Offset,
-    pub mask: Option<Mask>,
-    pub kind: Kind,
+    pub ty: Type,
+    pub builtin: bool,
 }
 
-pub struct Struct {
-    pub attrs: Vec<Attribute>,
-    pub vis: Visibility,
-    pub name: Ident,
-    pub size: Offset,
-    pub mask: Option<Mask>,
-    pub fields: Vec<Field>,
-}
+impl From<ast::Field> for Field {
+    fn from(ast: ast::Field) -> Self {
+        let layout: Layout = ast.layout.into();
 
-impl TryFrom<ast::Field> for Field {
-    type Error = Error;
-
-    fn try_from(value: ast::Field) -> Result<Self> {
-        let (kind, mask) = if let Some(size) = lit::size_of(&value.ty) {
-            (Kind::Literal(size), Mask::for_size(size))
-        } else {
-            (Kind::Custom(Box::new(value.ty)), None)
-        };
-
-        Ok(Self {
-            attrs: value.attrs,
-            vis: value.vis,
-            name: value.name,
-            offset: value.offset,
-            mask,
-            kind,
-        })
-    }
-}
-
-impl TryFrom<ast::Data> for Struct {
-    type Error = Error;
-
-    fn try_from(ast: ast::Data) -> Result<Self> {
-        let ast::Body::Fields(fields) = ast.body else {
-            panic!("struct expected");
-        };
-
-        let fields: Vec<Field> = fields
-            .into_iter()
-            .map(std::convert::TryInto::try_into)
-            .collect::<Result<Vec<_>>>()?;
-
-        for field in &fields {
-            let Kind::Literal(size) = field.kind else {
-                continue;
-            };
-
-            if field.offset + size > ast.size {
-                return Err(Error::new(
-                    field.name.span(),
-                    "field exceeds struct bounds",
-                ));
+        let builtin = ast.ty.is_none();
+        let ty = ast.ty.unwrap_or_else(|| {
+            if layout.size == 1 {
+                Type::boolean()
+            } else {
+                let size = layout.size.div_ceil(8).next_power_of_two() * 8;
+                Type::literal(size)
             }
-        }
+        });
 
-        let mask = Mask::for_size(ast.size);
-
-        Ok(Self {
-            attrs: ast.attrs,
+        Self {
+            attr: ast.attr,
+            layout,
             vis: ast.vis,
             name: ast.name,
-            size: ast.size,
-            mask,
-            fields,
-        })
+            ty,
+            builtin,
+        }
     }
 }
