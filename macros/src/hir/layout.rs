@@ -22,13 +22,22 @@ impl From<tt::Layout> for Layout {
         )]
         let aligned = offset % 8 == 0 && size % 8 == 0;
 
-        let read_offset_bytes = offset / 8;
-        let read_bytes = (offset % 8 + size).div_ceil(8);
+        let mut read_offset_bytes = offset / 8;
+        let mut read_bytes = (offset % 8 + size).div_ceil(8);
 
         let shr = read_bytes * 8 - offset % 8 - size;
 
-        // NOTE: mask.size * 8 == read_bytes;
         let mask = Mask::new(read_bytes * 8);
+
+        if let Some(mask) = &mask {
+            let upper = read_offset_bytes + read_bytes;
+            let mask_bytes = mask.size / 8;
+
+            if upper >= mask_bytes {
+                read_offset_bytes = upper - read_bytes;
+                read_bytes = mask_bytes;
+            }
+        }
 
         Self {
             offset,

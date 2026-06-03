@@ -10,18 +10,18 @@ impl Layout {
         tokens: &mut TokenStream,
     ) {
         let read_offset = self.read_offset_bytes;
-        let read_size = self.read_bytes;
+        let read_bytes = self.read_bytes;
 
         if self.aligned {
             tokens.extend(quote! {
                 let from = self.0
                     .split_at(#read_offset).1
-                    .split_at(#read_size).0;
+                    .split_at(#read_bytes).0;
             });
 
             let cvt = if builtin {
                 quote! {
-                    let mut buffer = [0u8; #read_size];
+                    let mut buffer = [0u8; #read_bytes];
                     ::bitx::copy(&mut buffer, from);
 
                     <#ty>::from_be_bytes(buffer)
@@ -32,18 +32,21 @@ impl Layout {
 
             tokens.extend(cvt);
         } else if let Some(mask) = &self.mask {
-            let size = self.size;
-            let mask_size = mask.size;
+            let size = Literal::u32_unsuffixed(self.size);
+            let mask_size = Literal::u32_unsuffixed(mask.size);
+            let mask_bytes = Literal::u32_unsuffixed(mask.size / 8);
+            let shr = Literal::u32_unsuffixed(self.shr);
+
             let mask = &mask.ty;
-            let shr = self.shr;
 
             tokens.extend(quote! {
                 let from = self.0
                     .split_at(#read_offset).1
-                    .split_at(#read_size).0;
+                    .split_at(#read_bytes).0;
 
-                let mut buffer = [0u8; #read_size];
-                ::bitx::copy(&mut buffer, from);
+                let mut buffer = [0u8; #mask_bytes];
+                let into = buffer.split_at_mut(#mask_bytes - #read_bytes).1;
+                ::bitx::copy(into, from);
 
                 let mut val = <#mask>::from_be_bytes(buffer);
                 val >>= #shr;
