@@ -18,7 +18,7 @@ bits! {
 }
 
 bits! {
-    pub struct ComplexPacket: u3 {
+    pub struct ComplexPacket: u24 {
         0.0;01 pub flag,
         0.1;08 pub nested: NestedData,
         1.1;15 pub remainder,
@@ -50,7 +50,7 @@ fn test_complex_unaligned_nested() {
 
     let packet = ComplexPacket::from_array(data);
 
-    assert_eq!(packet.flag(), true);
+    assert!(packet.flag());
     assert_eq!(packet.nested().inner(), 0xAA);
     assert_eq!(packet.remainder(), 1);
 }

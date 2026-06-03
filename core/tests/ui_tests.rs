@@ -2,6 +2,6 @@
 
 #[test]
 fn ui() {
-    let t = trybuild::TestCases::new();
-    t.compile_fail("tests/ui/*.rs");
+    let cases = trybuild::TestCases::new();
+    cases.compile_fail("tests/ui/*.rs");
 }
