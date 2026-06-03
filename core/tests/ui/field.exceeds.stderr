@@ -1,5 +1,0 @@
-error: field `too_large` exceeds struct bounds
- --> tests/ui/field.exceeds.rs:6:31
-  |
-6 |         0.1 pub too_large: u16, // Requires 16 bits, exceeds bounds
-  |                               ^

@@ -4,7 +4,7 @@ use bitx::bits;
 
 bits! {
     #[derive(Debug)]
-    pub enum Power: 0.2 {
+    pub enum Power: u2 {
         0 Off,
         1 Sleep,
         2 Standby,
@@ -28,7 +28,7 @@ fn test_coverage() {
 
 bits! {
     #[derive(Debug)]
-    pub enum Status: 0.3 {
+    pub enum Status: u3 {
         1 Active,
         2 Paused,
         _ Unknown,

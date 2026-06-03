@@ -1,9 +1,9 @@
 use bitx::bits;
 
 bits! {
-    pub struct OutOfBoundsPacket: 1.0 {
-        0.0 pub flag: u1,
-        0.1 pub too_large: u16, // Requires 16 bits, exceeds bounds
+    pub struct OutOfBoundsPacket: u8 {
+        0.0;01 pub flag,
+        0.1;16 pub too_large, // Requires 16 bits, exceeds bounds
     }
 }
 

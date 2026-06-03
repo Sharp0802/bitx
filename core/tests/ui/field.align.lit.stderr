@@ -1,5 +1,0 @@
-error: unaligned field `huge_field` cannot be larger than 128 bits
- --> tests/ui/field.align.lit.rs:5:33
-  |
-5 |         0.1 pub huge_field: u129,
-  |                                 ^

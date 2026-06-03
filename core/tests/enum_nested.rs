@@ -4,7 +4,7 @@ use bitx::bits;
 
 bits! {
     #[derive(Debug)]
-    pub enum PowerState: 0.2 {
+    pub enum PowerState: u2 {
         0 Off,
         1 Sleep,
         2 Standby,

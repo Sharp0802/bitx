@@ -1,5 +1,0 @@
-error: byte offset cannot have a type suffix
- --> tests/ui/offset.suffix.rs:5:9
-  |
-5 |         0usize pub flag: u1, // suffixes are not allowed
-  |         ^^^^^^

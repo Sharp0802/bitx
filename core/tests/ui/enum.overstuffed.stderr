@@ -1,5 +1,0 @@
-error: variant value `4` exceeds the maximum allowed value (`3`) for a 2-bit enum
- --> tests/ui/enum.overstuffed.rs:9:9
-  |
-9 |         4 V4,
-  |         ^

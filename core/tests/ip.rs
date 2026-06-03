@@ -3,25 +3,25 @@
 use bitx::bits;
 
 bits! {
-    pub struct IpV4Header: 2.0 {
-        0.0 pub version: u4,
-        0.4 pub ihl: u4,
-        1.0 pub dscp: u6,
-        1.6 pub ecn: u2,
+    pub struct IpV4Header: u16 {
+        0.0;4 pub version,
+        0.4;4 pub ihl,
+        1.0;6 pub dscp,
+        1.6;2 pub ecn,
     }
 }
 
 bits! {
-    pub struct NestedData: 1.0 {
-        0.0 pub inner: u8,
+    pub struct NestedData: u8 {
+        0.0;8 pub inner,
     }
 }
 
 bits! {
-    pub struct ComplexPacket: 3.0 {
-        0.0 pub flag: u1,
-        0.1 pub nested: NestedData,
-        1.1 pub remainder: u15,
+    pub struct ComplexPacket: u3 {
+        0.0;01 pub flag,
+        0.1;08 pub nested: NestedData,
+        1.1;15 pub remainder,
     }
 }
 

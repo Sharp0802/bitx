@@ -4,11 +4,11 @@ use bitx::bits;
 use proptest::prelude::*;
 
 bits! {
-    pub struct FuzzHeader: 4.0 {
-        0.0 pub flag: u1,
-        0.1 pub status: u3,
-        0.4 pub unaligned_cross: u12, // Crosses byte boundaries
-        2   pub tail: u16,
+    pub struct FuzzHeader: u4 {
+        0.0;01 pub flag,
+        0.1;03 pub status,
+        0.4;12 pub unaligned_cross, // Crosses byte boundaries
+        2.0;16 pub tail,
     }
 }
 

@@ -10,7 +10,7 @@ impl bitx::Bits for LargeData {
 
 bits! {
     pub struct HugePacket: 33.0 {
-        0.1 pub huge_field: LargeData,
+        0.1;256 pub huge_field: LargeData,
         // unaligned extraction > 128 bits
     }
 }

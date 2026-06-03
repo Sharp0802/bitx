@@ -1,7 +1,7 @@
 use bitx::bits;
 
 bits! {
-    pub enum Overstuffed: 0.2 {
+    pub enum Overstuffed: u2 {
         0 V0,
         1 V1,
         2 V2,
@@ -11,4 +11,3 @@ bits! {
 }
 
 fn main() {}
-
