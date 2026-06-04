@@ -106,4 +106,23 @@ mod tests {
         let result: Result<Block<Ident>, _> = input.parse();
         assert!(result.is_err());
     }
+
+    #[test]
+    fn into_iter_collects_items() {
+        let ts = quote!({ x, y, z });
+        let mut input = Input::from(ts);
+        let block: Block<Ident> = input.parse().unwrap();
+
+        let names: Vec<String> =
+            block.into_iter().map(|ident| ident.to_string()).collect();
+        assert_eq!(names, vec!["x", "y", "z"]);
+    }
+
+    #[test]
+    fn is_empty_for_populated() {
+        let ts = quote!({ a });
+        let mut input = Input::from(ts);
+        let block: Block<Ident> = input.parse().unwrap();
+        assert!(!block.is_empty());
+    }
 }

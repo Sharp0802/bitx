@@ -250,4 +250,26 @@ mod tests {
             "expected truncation marker, got {text}",
         );
     }
+
+    #[test]
+    fn no_overlap_empty_vec() {
+        // Empty input short-circuits to Ok(empty).
+        let result = Values::no_overlap(vec![]).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn no_overlap_single_value() {
+        // One-element input also short-circuits.
+        let result = Values::no_overlap(vec![make_value(3, 5)]).unwrap();
+        assert_eq!(result.iter().count(), 1);
+    }
+
+    #[test]
+    fn from_empty_vec() {
+        // `From<Vec<Value>>` for an empty vec hits the
+        // `unreachable!()` branch — there is no first element.
+        let result: Values = Vec::<Value>::new().into();
+        assert!(result.is_empty());
+    }
 }

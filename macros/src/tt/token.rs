@@ -123,4 +123,23 @@ mod tests {
         let tok: Token = opt.into();
         assert!(matches!(tok, Token::End));
     }
+
+    #[test]
+    fn to_tokens_literal() {
+        // `Token::Literal` should round-trip through `to_tokens`.
+        let mut input: Input = quote!(42).into();
+        let tok = input.pop();
+        let mut out = TokenStream::new();
+        tok.to_tokens(&mut out);
+        assert_eq!(out.to_string(), "42");
+    }
+
+    #[test]
+    fn to_tokens_end_emits_nothing() {
+        // `Token::End` should be a no-op when emitted.
+        let tok = Token::End;
+        let mut out = TokenStream::new();
+        tok.to_tokens(&mut out);
+        assert!(out.is_empty());
+    }
 }

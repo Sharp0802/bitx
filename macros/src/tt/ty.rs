@@ -136,4 +136,104 @@ mod tests {
 
         assert_eq!(ts.to_string(), out.to_string());
     }
+
+    #[test]
+    fn test_single_ident() {
+        // No `<...>`, no leading `::` — just a bare ident. Hits the
+        // `End => break` branch in the parser.
+        let ts = quote!(u32);
+        let mut input: Input = ts.clone().into();
+
+        let parsed: Type = input.parse().unwrap();
+        let mut out = TokenStream::new();
+        parsed.to_tokens(&mut out);
+
+        assert_eq!(ts.to_string(), out.to_string());
+    }
+
+    #[test]
+    fn test_return_type_with_arrow() {
+        // `-> u32` inside a function signature: the parser must NOT
+        // treat `>` as a generic-close. The `->` is a single arrow.
+        let ts = quote!(fn() -> u32);
+        let mut input: Input = ts.clone().into();
+
+        // The full source is `fn() -> u32`. Parsing should consume
+        // `fn() -` first, then encounter `>` with `aft_hyp == true`,
+        // which is the `->` special case. The trailing ` u32` then
+        // becomes the return type.
+        let parsed: Type = input.parse().unwrap();
+        let mut out = TokenStream::new();
+        parsed.to_tokens(&mut out);
+
+        assert_eq!(ts.to_string(), out.to_string());
+    }
+
+    #[test]
+    fn test_nested_generics() {
+        // depth goes 0 -> 1 -> 2 -> 1 -> 0 across the
+        // `Vec<HashMap<String, u32>>` shape.
+        let ts = quote!(Vec<HashMap<String, u32>>);
+        let mut input: Input = ts.clone().into();
+
+        let parsed: Type = input.parse().unwrap();
+        let mut out = TokenStream::new();
+        parsed.to_tokens(&mut out);
+
+        assert_eq!(ts.to_string(), out.to_string());
+    }
+
+    #[test]
+    fn test_stray_gt_rejected() {
+        // A `>` with no matching `<` is a parse error.
+        let ts = quote!(u32 >> u32);
+        let mut input: Input = ts.into();
+
+        let result: Result<Type, _> = input.parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_comma_in_generics_terminates() {
+        // A `,` at depth 0 terminates the type. Useful for parsing
+        // the second generic arg without consuming the comma.
+        let ts = quote!(u32,);
+        let mut input: Input = ts.into();
+
+        let parsed: Type = input.parse().unwrap();
+        let mut out = TokenStream::new();
+        parsed.to_tokens(&mut out);
+
+        assert_eq!(out.to_string(), "u32");
+    }
+
+    #[test]
+    fn test_literal_emits_typed_path() {
+        // `Type::literal(8)` should produce the path
+        // `::core::primitive::u8`. Note: `TokenStream::to_string`
+        // inserts spaces around `::` because the puncts are joint.
+        let ty = Type::literal(8);
+        let mut out = TokenStream::new();
+        ty.to_tokens(&mut out);
+        assert_eq!(out.to_string(), ":: core :: primitive :: u8");
+    }
+
+    #[test]
+    fn test_literal_wider_widths() {
+        for size in [16u32, 32, 64, 128] {
+            let ty = Type::literal(size);
+            let mut out = TokenStream::new();
+            ty.to_tokens(&mut out);
+            let expected = format!(":: core :: primitive :: u{size}");
+            assert_eq!(out.to_string(), expected, "size = {size}");
+        }
+    }
+
+    #[test]
+    fn test_boolean_emits_bool_path() {
+        let ty = Type::boolean();
+        let mut out = TokenStream::new();
+        ty.to_tokens(&mut out);
+        assert_eq!(out.to_string(), ":: core :: primitive :: bool");
+    }
 }
