@@ -79,9 +79,20 @@ fn check_coverage(
 impl TryFrom<Data> for Enum {
     type Error = Error;
 
+    #[inline(always)]
+    #[expect(
+        clippy::inline_always,
+        reason = "1. fn is used only at `hir::Data::try_from`.\n\
+                  2. prologue checks can be omitted by context.\n\
+                  3. inlining may not be done without `always`."
+    )]
     fn try_from(ast: Data) -> Result<Self, Error> {
+        // NOTE: this check should be omitted by inlining
         let Body::Enum(variants) = ast.body else {
-            panic!("enum expected");
+            return Err(Error::new(
+                "internal: cannot raising struct AST into enum HIR",
+                ast.name.span(),
+            ));
         };
 
         let name = ast.name;
