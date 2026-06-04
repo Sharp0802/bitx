@@ -57,3 +57,16 @@ impl TryFrom<Data> for Struct {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tt::Input;
+
+    #[test]
+    fn raise_enum_as_struct() {
+        let mut input: Input = quote!(enum Foo: u1 { _ => A }).into();
+        let data: Data = input.parse().unwrap();
+        assert!(TryInto::<Struct>::try_into(data).is_err());
+    }
+}

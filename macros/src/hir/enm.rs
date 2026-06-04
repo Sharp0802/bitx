@@ -173,6 +173,13 @@ mod tests {
     }
 
     #[test]
+    fn raise_struct_as_enum() {
+        let mut input: Input = quote!(struct Foo: u1 {}).into();
+        let data: Data = input.parse().unwrap();
+        assert!(TryInto::<Enum>::try_into(data).is_err());
+    }
+
+    #[test]
     fn full_coverage() {
         let data = parse_enum(
             "E",
