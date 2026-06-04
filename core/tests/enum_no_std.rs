@@ -14,13 +14,8 @@ bits! {
 }
 
 #[test]
-fn test_enum_full_coverage() {
-    let state_off = PowerState::from_array([0]);
-    assert_eq!(state_off, PowerState::Off);
-
-    let state_on = PowerState::from_array([3]);
-    assert_eq!(state_on, PowerState::On);
-
-    let state_sleep = PowerState::from_slice(&[1]).unwrap();
-    assert_eq!(state_sleep, PowerState::Sleep);
+fn test_enum_no_std() {
+    assert_eq!(PowerState::from_array([0]), PowerState::Off);
+    assert_eq!(PowerState::from_array([3]), PowerState::On);
+    assert_eq!(PowerState::from_slice(&[1]).unwrap(), PowerState::Sleep);
 }

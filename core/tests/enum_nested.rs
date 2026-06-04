@@ -30,9 +30,6 @@ bits! {
 
 #[test]
 fn test_enum_in_struct() {
-    // [ Status (3) | Flag (3) | Pad ]
-    // [   0 1 0    |  1 1 0   | 00  ]
-
     let header = DeviceHeader::from_array([0b010_110_00]);
 
     assert_eq!(header.status(), Status::Paused);
