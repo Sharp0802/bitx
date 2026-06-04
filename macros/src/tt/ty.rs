@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::tt::{Error, Input, Parse, Token};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Type(TokenStream);
 
 // NOTE: maximum length of 32-bit unsigned integer is 10 in base 10.

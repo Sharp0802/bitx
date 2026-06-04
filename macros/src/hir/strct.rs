@@ -3,6 +3,7 @@ use crate::hir::{Field, Mask};
 use crate::prelude::*;
 use crate::tt::{Attr, Error, Visibility};
 
+#[derive(Debug)]
 pub struct Struct {
     pub attr: Attr,
     pub vis: Visibility,

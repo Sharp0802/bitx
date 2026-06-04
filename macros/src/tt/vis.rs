@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::tt::{Error, Input, Parse, Token};
 
+#[derive(Debug)]
 pub struct Visibility {
     public: bool,
     inner: Option<Token>,

@@ -3,6 +3,7 @@ use crate::hir::Mask;
 use crate::prelude::*;
 use crate::tt::{Attr, Block, Error, Visibility};
 
+#[derive(Debug)]
 pub struct Enum {
     pub attr: Attr,
     pub vis: Visibility,

@@ -6,6 +6,7 @@ pub trait Parse: Sized {
     fn parse(input: &mut Input) -> Result<Self, Error>;
 }
 
+#[derive(Debug)]
 pub struct Input {
     iter: IntoIter,
     buffer: Option<Token>,

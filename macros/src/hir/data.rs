@@ -2,6 +2,7 @@ use crate::ast::{self, Body};
 use crate::hir::{Enum, Struct};
 use crate::tt::Error;
 
+#[derive(Debug)]
 pub enum Data {
     Enum(Enum),
     Struct(Struct),

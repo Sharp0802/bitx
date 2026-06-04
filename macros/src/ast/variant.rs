@@ -2,6 +2,7 @@ use crate::ast::Values;
 use crate::prelude::*;
 use crate::tt::{Attr, Error, Input, Parse, Token};
 
+#[derive(Debug)]
 pub struct Variant {
     pub attr: Attr,
     pub name: Ident,

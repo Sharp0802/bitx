@@ -1,6 +1,7 @@
 use crate::hir::Mask;
 use crate::tt;
 
+#[derive(Debug)]
 pub struct Layout {
     pub offset: u32,
     pub size: u32,

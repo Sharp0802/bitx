@@ -1,6 +1,6 @@
 use crate::tt::Type;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Mask {
     pub size: u32,
     pub ty: Type,

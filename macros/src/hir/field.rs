@@ -3,6 +3,7 @@ use crate::hir::Layout;
 use crate::prelude::*;
 use crate::tt::{Attr, Error, Type, Visibility};
 
+#[derive(Debug)]
 pub struct Field {
     pub attr: Attr,
     pub layout: Layout,

@@ -2,11 +2,13 @@ use crate::ast::{Field, Variant};
 use crate::prelude::*;
 use crate::tt::{Attr, Block, Error, Input, Parse, Token, Visibility};
 
+#[derive(Debug)]
 pub enum Body {
     Enum(Block<Variant>),
     Struct(Block<Field>),
 }
 
+#[derive(Debug)]
 pub struct Data {
     pub attr: Attr,
     pub vis: Visibility,

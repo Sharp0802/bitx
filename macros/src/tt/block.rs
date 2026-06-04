@@ -3,6 +3,7 @@ use proc_macro2::Delimiter;
 use crate::prelude::*;
 use crate::tt::{Error, Input, Parse, Token};
 
+#[derive(Debug)]
 pub struct Block<T>(Vec<T>);
 
 impl<T> Block<T> {
