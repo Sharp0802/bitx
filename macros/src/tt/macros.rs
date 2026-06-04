@@ -44,3 +44,26 @@ macro_rules! is {
 }
 
 pub(crate) use is;
+
+#[cfg(test)]
+macro_rules! roundtrip {
+    ($f:ident $k:literal |$v:ident: $t:ty| { $($tt:tt)* }) => {
+        #[test]
+        fn $f() {
+            let ts: TokenStream = $k.parse().unwrap();
+            let mut input: Input = ts.clone().into();
+            let $v: $t = input.parse().unwrap();
+
+            $($tt)*
+
+            assert!(is!(input.peek(); End));
+            assert_eq!(
+                $v.into_token_stream().to_string(),
+                ts.to_string(),
+            );
+        }
+    };
+}
+
+#[cfg(test)]
+pub(crate) use roundtrip;
