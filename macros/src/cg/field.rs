@@ -32,10 +32,13 @@ to_tokens!(for Field; |self, tokens| {
     self.assert(&mut body);
     self.layout.quote_read(ty, self.builtin, &mut body);
 
+    let mut ret_ty = TokenStream::new();
+    self.layout.return_type(ty, self.builtin, &mut ret_ty);
+
     let getter = quote! {
         #attr
         #[inline]
-        #vis const fn #name(&self) -> #ty {
+        #vis const fn #name(&self) -> #ret_ty {
             #body
         }
     };

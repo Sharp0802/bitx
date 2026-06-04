@@ -40,6 +40,7 @@ to_tokens!(for Struct; |self, tokens| {
 
         impl ::bitx::Bits for #name {
             type Mask = #mask_ty;
+            type Read<'a> = &'a #name;
             const BITS: ::core::primitive::u32 = #size;
         }
 

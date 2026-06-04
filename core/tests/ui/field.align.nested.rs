@@ -5,6 +5,7 @@ pub struct LargeData([u8; 32]);
 
 impl bitx::Bits for LargeData {
     type Mask = ();
+    type Read<'a> = &'a LargeData;
     const BITS: u32 = 256;
 }
 

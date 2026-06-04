@@ -3,6 +3,21 @@ use crate::prelude::*;
 use crate::tt::Type;
 
 impl Layout {
+    pub fn return_type(
+        &self,
+        ty: &Type,
+        builtin: bool,
+        tokens: &mut TokenStream,
+    ) {
+        let quoted = if self.aligned && !builtin {
+            quote! { <#ty as ::bitx::Bits>::Read<'_> }
+        } else {
+            quote! { #ty }
+        };
+
+        tokens.extend(quoted);
+    }
+
     pub fn quote_read(
         &self,
         ty: &Type,
@@ -27,7 +42,12 @@ impl Layout {
                     <#ty>::from_be_bytes(buffer)
                 }
             } else {
-                quote! { <#ty>::from_slice(from) }
+                quote! {
+                    match <#ty>::from_slice(from) {
+                        Some(val) => val,
+                        None => unreachable!(),
+                    }
+                }
             };
 
             tokens.extend(cvt);

@@ -92,8 +92,15 @@ pub use bitx_macros::bits;
 pub trait Bits {
     /// A mask type to extract data from byte stream.
     ///
-    /// Unit type will be used for structs larger than 128-bit.
+    /// `u128` will be set for structs larger than 128-bit.
     type Mask;
+
+    /// A type converted from slice.
+    ///
+    /// If a type is small enough and
+    /// if it cannot be directly transmuted,
+    /// value type itself will be used regardless of lifetime.
+    type Read<'a>;
 
     /// A declared size of struct, in bits.
     const BITS: u32;

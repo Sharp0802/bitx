@@ -1,11 +1,11 @@
 error: unaligned large custom types are not supported yet
-  --> tests/ui/field.align.nested.rs:11:1
+  --> tests/ui/field.align.nested.rs:12:1
    |
-11 | / bits! {
-12 | |     pub struct HugePacket: u257 {
-13 | |         0.1;256 pub huge_field: LargeData,
+12 | / bits! {
+13 | |     pub struct HugePacket: u257 {
+14 | |         0.1;256 pub huge_field: LargeData,
 ...  |
-16 | | }
+17 | | }
    | |_^
    |
    = note: this error originates in the macro `bits` (in Nightly builds, run with -Z macro-backtrace for more info)
