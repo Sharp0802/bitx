@@ -23,7 +23,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_u32_decimal() {
+    fn parse_u32_dec() {
         assert_eq!(parse_u32("0").unwrap(), 0);
         assert_eq!(parse_u32("42").unwrap(), 42);
         assert_eq!(parse_u32("4294967295").unwrap(), u32::MAX);
@@ -37,14 +37,14 @@ mod tests {
     }
 
     #[test]
-    fn parse_u32_octal() {
+    fn parse_u32_oct() {
         assert_eq!(parse_u32("0o0").unwrap(), 0);
         assert_eq!(parse_u32("0o17").unwrap(), 0o17);
         assert_eq!(parse_u32("0o755").unwrap(), 0o755);
     }
 
     #[test]
-    fn parse_u32_binary() {
+    fn parse_u32_bin() {
         assert_eq!(parse_u32("0b0").unwrap(), 0);
         assert_eq!(parse_u32("0b101").unwrap(), 0b101);
         assert_eq!(parse_u32("0b11111111").unwrap(), 0xFF);
@@ -59,7 +59,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_u128_decimal() {
+    fn parse_u128_dec() {
         assert_eq!(parse_u128("0").unwrap(), 0);
         assert_eq!(parse_u128("42").unwrap(), 42);
         assert!(parse_u128("not a number").is_err());
@@ -75,12 +75,12 @@ mod tests {
     }
 
     #[test]
-    fn parse_u128_octal() {
+    fn parse_u128_oct() {
         assert_eq!(parse_u128("0o17").unwrap(), 0o17);
     }
 
     #[test]
-    fn parse_u128_binary() {
+    fn parse_u128_bin() {
         assert_eq!(parse_u128("0b1010").unwrap(), 0xA);
         assert_eq!(parse_u128("0b10101010").unwrap(), 0xAA);
     }

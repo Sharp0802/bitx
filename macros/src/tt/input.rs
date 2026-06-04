@@ -110,21 +110,23 @@ mod tests {
 
     #[test]
     fn error_poisons_input() {
+        use std::panic::{AssertUnwindSafe, catch_unwind};
+
         let ts = quote!(a);
         let mut input = Input::from(ts);
-        let _ = input.error("boom");
-        // Calling pop after error panics.
-        let result =
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let mut i = input;
-                let _ = i.pop();
-            }));
+
+        _ = input.error("boom");
+
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let mut i = input;
+            let _ = i.pop();
+        }));
+
         assert!(result.is_err());
     }
 
     #[test]
     fn parse_chains() {
-        // Two parses on the same input should advance through it.
         let ts = quote!(a b);
         let mut input = Input::from(ts);
         let first: Ident = input.parse().unwrap();

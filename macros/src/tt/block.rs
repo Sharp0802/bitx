@@ -63,7 +63,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empty_block() {
+    fn test_empty_block() {
         let ts = quote!({});
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn parses_multiple_items() {
+    fn test_items() {
         let ts = quote!({ a, b, c });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -81,7 +81,7 @@ mod tests {
     }
 
     #[test]
-    fn trailing_comma_ok() {
+    fn test_trailing_comma() {
         let ts = quote!({ a, b, });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -91,8 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn wrong_delimiter_rejected() {
-        // Parens instead of braces
+    fn test_wrong_delimiter() {
         let ts = quote!((a));
         let mut input = Input::from(ts);
         let result: Result<Block<Ident>, _> = input.parse();
@@ -100,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_separator_rejected() {
+    fn test_missing_separator() {
         let ts = quote!({ a b });
         let mut input = Input::from(ts);
         let result: Result<Block<Ident>, _> = input.parse();
@@ -108,7 +107,7 @@ mod tests {
     }
 
     #[test]
-    fn into_iter_collects_items() {
+    fn test_into_iter() {
         let ts = quote!({ x, y, z });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -119,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn is_empty_for_populated() {
+    fn test_is_empty() {
         let ts = quote!({ a });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();

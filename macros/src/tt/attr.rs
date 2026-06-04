@@ -45,10 +45,7 @@ mod tests {
         let mut input: Input = ts.clone().into();
         let attr: Attr = input.parse().unwrap();
 
-        let mut out = TokenStream::new();
-        attr.to_tokens(&mut out);
-
-        assert_eq!(out.to_string(), ts.to_string());
+        assert_eq!(attr.to_token_stream().to_string(), ts.to_string());
     }
 
     #[test]
@@ -59,35 +56,25 @@ mod tests {
             #[cfg(target_os = "linux")]
         };
         let mut input: Input = ts.clone().into();
-
         let attr: Attr = input.parse().unwrap();
 
-        let mut out = TokenStream::new();
-        attr.to_tokens(&mut out);
-
-        assert_eq!(out.to_string(), ts.to_string());
+        assert_eq!(attr.to_token_stream().to_string(), ts.to_string());
     }
 
     #[test]
     fn test_no_attr() {
-        let ts = quote!(
-            pub struct MyStruct;
-        );
+        let ts = quote!(pub struct MyStruct);
         let mut input: Input = ts.into();
-
         let attr: Attr = input.parse().unwrap();
 
-        let mut out = proc_macro2::TokenStream::new();
-        attr.to_tokens(&mut out);
-        assert!(out.is_empty());
-
+        assert!(attr.to_token_stream().is_empty());
         assert!(is!(input.peek(); Ident "pub"));
     }
 
     #[test]
     fn test_malformed() {
         let ts: TokenStream = "# pub struct".parse().unwrap();
-        let mut input = Input::from(ts);
+        let mut input: Input = ts.into();
 
         assert!(input.parse::<Attr>().is_err());
     }
