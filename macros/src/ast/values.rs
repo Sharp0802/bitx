@@ -130,9 +130,7 @@ impl From<Vec<Value>> for Values {
         let mut merged = Vec::with_capacity(raw.len());
 
         let mut iter = raw.into_iter();
-        let Some(mut buffer) = iter.next() else {
-            unreachable!()
-        };
+        let mut buffer = iter.next().unwrap_or_else(|| unreachable!());
 
         for item in iter {
             if buffer.adjoin(&item) {
@@ -267,8 +265,6 @@ mod tests {
 
     #[test]
     fn from_empty_vec() {
-        // `From<Vec<Value>>` for an empty vec hits the
-        // `unreachable!()` branch — there is no first element.
         let result: Values = Vec::<Value>::new().into();
         assert!(result.is_empty());
     }
