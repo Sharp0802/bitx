@@ -83,6 +83,12 @@ mod tests {
     use super::*;
 
     tst!(Token {
+        ident: "foo",
+        punct: "<",
+        literal: "42",
+        group: "{a,b}",
+        end: "",
+
         ident: "foo" as Token::Ident(_),
         punct: "<" as Token::Punct(_),
         literal: "42" as Token::Literal(_),
