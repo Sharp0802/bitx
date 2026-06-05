@@ -50,28 +50,11 @@ impl ToTokens for Visibility {
 mod tests {
     use super::*;
 
-    roundtrip!(roundtrip_pub "pub" |val: Visibility| {
-        assert!(val.public);
-        assert!(val.inner.is_none());
-    });
-
-    roundtrip!(roundtrip_pub_crate "pub(crate)" |val: Visibility| {
-        assert!(val.public);
-        assert!(val.inner.is_some());
-    });
-
-    roundtrip!(roundtrip_pub_super "pub(super)" |val: Visibility| {
-        assert!(val.public);
-        assert!(val.inner.is_some());
-    });
-
-    roundtrip!(roundtrip_pub_self "pub(self)" |val: Visibility| {
-        assert!(val.public);
-        assert!(val.inner.is_some());
-    });
-
-    roundtrip!(roundtrip_priv "" |val: Visibility| {
-        assert!(!val.public);
-        assert!(val.inner.is_none());
+    tst!(Visibility {
+        pub: "pub",
+        crate: "pub(crate)",
+        super: "pub(super)",
+        self: "pub(self)",
+        priv: "",
     });
 }

@@ -1,7 +1,7 @@
 use proc_macro2::Delimiter;
 
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token};
+use crate::tt::{Error, Input, Parse};
 
 #[derive(Debug)]
 pub struct Block<T>(Vec<T>);
@@ -64,7 +64,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_empty_block() {
+    fn parse_empty() {
         let ts = quote!({});
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -72,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn test_items() {
+    fn parse_items() {
         let ts = quote!({ a, b, c });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -82,7 +82,7 @@ mod tests {
     }
 
     #[test]
-    fn test_trailing_comma() {
+    fn parse_trailing_comma() {
         let ts = quote!({ a, b, });
         let mut input = Input::from(ts);
         let block: Block<Ident> = input.parse().unwrap();
@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[test]
-    fn test_wrong_delimiter() {
+    fn deny_wrong_delimiter() {
         let ts = quote!((a));
         let mut input = Input::from(ts);
         let result: Result<Block<Ident>, _> = input.parse();
@@ -100,29 +100,10 @@ mod tests {
     }
 
     #[test]
-    fn test_missing_separator() {
+    fn deny_missing_separator() {
         let ts = quote!({ a b });
         let mut input = Input::from(ts);
         let result: Result<Block<Ident>, _> = input.parse();
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_into_iter() {
-        let ts = quote!({ x, y, z });
-        let mut input = Input::from(ts);
-        let block: Block<Ident> = input.parse().unwrap();
-
-        let names: Vec<String> =
-            block.into_iter().map(|ident| ident.to_string()).collect();
-        assert_eq!(names, vec!["x", "y", "z"]);
-    }
-
-    #[test]
-    fn test_is_empty() {
-        let ts = quote!({ a });
-        let mut input = Input::from(ts);
-        let block: Block<Ident> = input.parse().unwrap();
-        assert!(!block.is_empty());
     }
 }

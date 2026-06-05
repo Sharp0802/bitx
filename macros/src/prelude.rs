@@ -5,4 +5,4 @@ pub use proc_macro2::{
 pub use quote::{ToTokens, quote, quote_spanned};
 
 #[cfg(test)]
-pub(crate) use crate::tt::roundtrip;
+pub(crate) use crate::tt::tst;

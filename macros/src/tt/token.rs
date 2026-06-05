@@ -39,6 +39,12 @@ impl From<Option<TokenTree>> for Token {
     }
 }
 
+impl Parse for Token {
+    fn parse(input: &mut Input) -> Result<Self, Error> {
+        Ok(input.pop())
+    }
+}
+
 impl ToTokens for Token {
     fn to_tokens(&self, to: &mut TokenStream) {
         match self {
@@ -75,71 +81,12 @@ impl_parse!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use proc_macro2::Delimiter;
 
-    #[test]
-    fn ident_parses() {
-        let ts = quote!(foo);
-        let mut input = Input::from(ts);
-        let ident: Ident = input.parse().unwrap();
-        assert_eq!(ident.to_string(), "foo");
-    }
-
-    #[test]
-    fn ident_rejects_punct() {
-        let ts = quote!('+');
-        let mut input = Input::from(ts);
-        let result: Result<Ident, _> = input.parse();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn punct_rejects_ident() {
-        let ts = quote!(foo);
-        let mut input = Input::from(ts);
-        let result: Result<Punct, _> = input.parse();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn literal_rejects_ident() {
-        let ts = quote!(foo);
-        let mut input = Input::from(ts);
-        let result: Result<Literal, _> = input.parse();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn group_parses_braces() {
-        let ts = quote!({ a, b });
-        let mut input = Input::from(ts);
-        let group: Group = input.parse().unwrap();
-        assert_eq!(group.delimiter(), Delimiter::Brace);
-    }
-
-    #[test]
-    fn from_tt_for_end() {
-        let opt: Option<TokenTree> = None;
-        let tok: Token = opt.into();
-        assert!(matches!(tok, Token::End));
-    }
-
-    #[test]
-    fn to_tokens_literal() {
-        // `Token::Literal` should round-trip through `to_tokens`.
-        let mut input: Input = quote!(42).into();
-        let tok = input.pop();
-        let mut out = TokenStream::new();
-        tok.to_tokens(&mut out);
-        assert_eq!(out.to_string(), "42");
-    }
-
-    #[test]
-    fn to_tokens_end_emits_nothing() {
-        // `Token::End` should be a no-op when emitted.
-        let tok = Token::End;
-        let mut out = TokenStream::new();
-        tok.to_tokens(&mut out);
-        assert!(out.is_empty());
-    }
+    tst!(Token {
+        ident: "foo" as Token::Ident(_),
+        punct: "<" as Token::Punct(_),
+        literal: "42" as Token::Literal(_),
+        group: "{a,b}" as Token::Group(_),
+        end: "" as Token::End,
+    });
 }

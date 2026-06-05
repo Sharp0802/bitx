@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token};
+use crate::tt::{Error, Input, Parse};
 
 #[derive(Debug)]
 pub struct Attr(TokenStream);

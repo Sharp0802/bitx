@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token};
+use crate::tt::{Error, Input, Parse};
 
 #[derive(Debug, Clone)]
 pub struct Type(TokenStream);
@@ -125,31 +125,16 @@ impl ToTokens for Type {
 mod tests {
     use super::*;
 
-    roundtrip!(roundtrip_ident "u32" |val: Type| {});
-    roundtrip!(roundtrip_path "std::collections" |val: Type| {});
-    roundtrip!(roundtrip_prefixed_path "::std::collections" |val: Type| {});
-    roundtrip!(roundtrip_arrow "fn() -> u32" |val: Type| {});
-    roundtrip!(roundtrip_nested_generic "Vec<Map<i8, u32>>" |val: Type| {});
+    tst!(Type {
+        ident: "u32",
+        path: "std::collections",
+        prefixed_path: "::std::collections",
+        arrow: "fn() -> u32",
+        nested_generic: "Vec<Map<i8, u32>>",
 
-    #[test]
-    fn test_unpaired_gt() {
-        let mut input: Input = quote!(u32 >> u32).into();
-
-        let result: Result<Type, _> = input.parse();
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_comma_termination() {
-        let ts = quote!(u32,);
-        let mut input: Input = ts.into();
-
-        let parsed: Type = input.parse().unwrap();
-        let mut out = TokenStream::new();
-        parsed.to_tokens(&mut out);
-
-        assert_eq!(out.to_string(), "u32");
-    }
+        trailing_comma: "u32," Ok("u32"),
+        unpaired_gt: "u32 >> u32" Err,
+    });
 
     #[test]
     fn test_literal() {

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token, parse_u32};
+use crate::tt::{Error, Input, Parse, parse_u32};
 
 #[derive(Debug, Copy, Clone)]
 pub struct Layout {

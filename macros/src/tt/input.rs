@@ -74,7 +74,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn peek_does_not_advance() {
+    fn test_non_advance() {
         let ts = quote!(a b c);
         let mut input = Input::from(ts);
         let _ = input.peek();
@@ -84,7 +84,7 @@ mod tests {
     }
 
     #[test]
-    fn pop_advances() {
+    fn test_advance() {
         let ts = quote!(a b);
         let mut input = Input::from(ts);
         let first: Ident = input.parse().unwrap();
@@ -94,7 +94,7 @@ mod tests {
     }
 
     #[test]
-    fn end_after_consumption() {
+    fn expect_end() {
         let ts = quote!(a);
         let mut input = Input::from(ts);
         let _first: Ident = input.parse().unwrap();
@@ -103,14 +103,14 @@ mod tests {
     }
 
     #[test]
-    fn end_for_empty() {
+    fn parse_empty() {
         let ts = quote!();
         let mut input = Input::from(ts);
         assert!(matches!(input.pop(), Token::End));
     }
 
     #[test]
-    fn error_poisons_input() {
+    fn deny_poisioned() {
         use std::panic::{AssertUnwindSafe, catch_unwind};
 
         let ts = quote!(a);
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_chains() {
+    fn parse_chain() {
         let ts = quote!(a b);
         let mut input = Input::from(ts);
         let first: Ident = input.parse().unwrap();

@@ -13,6 +13,7 @@ repository = "https://github.com/sharp0802/bitx"
 bitx = { path = "core", version = "0.2" }
 bitx-macros = { path = "macros", version = "0.2" }
 libfuzzer-sys = "0.4"
+paste = "1.0"
 proc-macro2 = "1.0"
 proptest = "1.11"
 quote = "1.0"

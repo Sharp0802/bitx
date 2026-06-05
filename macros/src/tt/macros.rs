@@ -29,7 +29,10 @@ macro_rules! tok {
         ] $($r)*)
     };
     (@a [$s:expr] [$($t:tt)*]) => {
-        match $s { $($t)* }
+        {
+            use $crate::tt::Token;
+            match $s { $($t)* }
+        }
     };
 
     ($s:expr ; $($t:tt)*) => { tok!(@a [$s] [] $($t)*) };
@@ -46,24 +49,109 @@ macro_rules! is {
 pub(crate) use is;
 
 #[cfg(test)]
-macro_rules! roundtrip {
-    ($f:ident $k:literal |$v:ident: $t:ty| { $($tt:tt)* }) => {
-        #[test]
-        fn $f() {
-            let ts: TokenStream = $k.parse().unwrap();
-            let mut input: Input = ts.clone().into();
-            let $v: $t = input.parse().unwrap();
-
-            $($tt)*
-
-            assert!(is!(input.peek(); End));
-            assert_eq!(
-                $v.into_token_stream().to_string(),
-                ts.to_string(),
-            );
+macro_rules! tst {
+    ([$ty:ty] $name:ident $from:literal) => {
+        ::paste::paste! {
+            #[test]
+            fn [< roundtrip_ $name >]() {
+                _ = $crate::tt::internal::roundtrip::<$ty>($from);
+            }
         }
+    };
+    ([$ty:ty] $name:ident $from:literal Ok) => {
+        ::paste::paste! {
+            #[test]
+            fn [< parse_ $name >]() {
+                _ = $crate::tt::internal::parse::<$ty>($from);
+            }
+        }
+    };
+    ([$ty:ty] $name:ident $from:literal Ok($lit:literal)) => {
+        ::paste::paste! {
+            #[test]
+            fn [< parse_ $name >]() {
+                _ = $crate::tt::internal::ok::<$ty>($from, $lit);
+            }
+        }
+    };
+    ([$ty:ty] $name:ident $from:literal Err) => {
+        ::paste::paste! {
+            #[test]
+            fn [< deny_ $name >]() {
+                $crate::tt::internal::deny::<$ty>($from, "");
+            }
+        }
+    };
+    ([$ty:ty] $name:ident $from:literal Err($lit:literal)) => {
+        ::paste::paste! {
+            #[test]
+            fn [< deny_ $name >]() {
+                $crate::tt::internal::deny::<$ty>($from, $lit);
+            }
+        }
+    };
+    ([$ty:ty] $name:ident $from:literal as $pat:pat) => {
+        ::paste::paste! {
+            #[test]
+            fn [< match_ $name >]() {
+                assert!(matches!($crate::tt::internal::parse($from), $pat));
+            }
+        }
+    };
+
+    ($ty:ty {
+        $(
+            $name:ident: $from:literal
+            $(Ok$(($lit:literal))?)?
+            $(Err$(($msg:literal))?)?
+            $(as $pat:pat)?
+        ),* $(,)?
+    }) => {
+        $($crate::tt::tst!(
+            [$ty] $name $from
+            $(Ok$(($lit))?)? $(Err$(($msg))?)? $(as $pat)?
+        );)*
     };
 }
 
 #[cfg(test)]
-pub(crate) use roundtrip;
+pub(crate) use tst;
+
+#[cfg(test)]
+pub mod internal {
+    use crate::prelude::*;
+    use crate::tt::{Input, Parse};
+    use core::fmt::Debug;
+    use core::str::FromStr;
+
+    pub fn parse<T: Parse>(src: &str) -> T {
+        let ts: TokenStream = src.parse().unwrap();
+        let mut input: Input = ts.into();
+        input.parse::<T>().unwrap()
+    }
+
+    pub fn ok<T: Parse + ToTokens>(src: &str, cmp: &str) {
+        assert_eq!(
+            parse::<T>(src).to_token_stream().to_string(),
+            TokenStream::from_str(cmp).unwrap().to_string(),
+        );
+    }
+
+    pub fn roundtrip<T: Parse + ToTokens>(src: &str) {
+        let ts: TokenStream = src.parse().unwrap();
+        let mut input: Input = ts.clone().into();
+        let val: T = input.parse().unwrap();
+        let out = val.to_token_stream();
+
+        assert!(is!(input.peek(); End));
+        assert_eq!(out.to_string(), ts.to_string());
+    }
+
+    pub fn deny<T: Parse + Debug>(src: &str, msg: &str) {
+        let ts: TokenStream = src.parse().unwrap();
+        let mut input: Input = ts.into();
+        let err = input.parse::<T>().unwrap_err();
+
+        assert!(err.message().contains(msg));
+    }
+}
