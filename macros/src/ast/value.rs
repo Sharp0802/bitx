@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token, is, parse_u128, tok};
+use crate::tt::{Error, Input, Parse, parse_u128};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]

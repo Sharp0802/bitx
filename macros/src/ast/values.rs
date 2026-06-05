@@ -1,6 +1,6 @@
 use crate::ast::Value;
 use crate::prelude::*;
-use crate::tt::{Error, Input, Parse, Token};
+use crate::tt::{Error, Input, Parse};
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]

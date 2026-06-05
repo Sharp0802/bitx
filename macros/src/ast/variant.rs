@@ -1,6 +1,6 @@
 use crate::ast::Values;
 use crate::prelude::*;
-use crate::tt::{Attr, Error, Input, Parse, Token};
+use crate::tt::{Attr, Error, Input, Parse};
 
 #[derive(Debug)]
 pub struct Variant {

@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::tt::{Attr, Error, Input, Layout, Parse, Token, Type, Visibility};
+use crate::tt::{Attr, Error, Input, Layout, Parse, Type, Visibility};
 
 #[derive(Debug)]
 pub struct Field {
