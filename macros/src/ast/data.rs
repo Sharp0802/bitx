@@ -61,3 +61,14 @@ impl Parse for Data {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    tst!(Data {
+        no_type: "foo" Err("`struct` or `enum`"),
+        no_delim: "struct foo {}" Err("`:`"),
+        invalid_repr: "struct foo: i8" Err("repr"),
+    });
+}

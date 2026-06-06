@@ -70,7 +70,7 @@ macro_rules! tst {
         ::paste::paste! {
             #[test]
             fn [< parse_ $name >]() {
-                _ = $crate::tt::internal::ok::<$ty>($from, $lit);
+                $crate::tt::internal::ok::<$ty>($from, $lit);
             }
         }
     };
@@ -90,11 +90,31 @@ macro_rules! tst {
             }
         }
     };
+    ([$ty:ty] $name:ident $from:literal Display($lit:literal)) => {
+        ::paste::paste! {
+            #[test]
+            fn [< display_ $name >]() {
+                assert_eq!(
+                    $crate::tt::internal::parse::<$ty>($from).to_string(),
+                    $lit,
+                );
+            }
+        }
+    };
+    ([$ty:ty] $name:ident $from:literal @|$arg:ident| { $($tt:tt)* }) => {
+        ::paste::paste! {
+            #[test]
+            fn [< test_ $name >]() {
+                let $arg = $crate::tt::internal::parse::<$ty>($from);
+                $($tt)*
+            }
+        }
+    };
     ([$ty:ty] $name:ident $from:literal as $pat:pat) => {
         ::paste::paste! {
             #[test]
             fn [< match_ $name >]() {
-                assert!(matches!($crate::tt::internal::parse($from), $pat));
+                assert!(matches!(&$crate::tt::internal::parse($from), $pat));
             }
         }
     };
@@ -104,12 +124,18 @@ macro_rules! tst {
             $name:ident: $from:literal
             $(Ok$(($lit:literal))?)?
             $(Err$(($msg:literal))?)?
+            $(Display($dis:literal))?
+            $(@|$arg:ident| { $($tt:tt)* })?
             $(as $pat:pat)?
         ),* $(,)?
     }) => {
         $($crate::tt::tst!(
             [$ty] $name $from
-            $(Ok$(($lit))?)? $(Err$(($msg))?)? $(as $pat)?
+            $(Ok$(($lit))?)?
+            $(Err$(($msg))?)?
+            $(Display($dis))?
+            $(@|$arg| { $($tt)* })?
+            $(as $pat)?
         );)*
     };
 }
@@ -141,10 +167,16 @@ pub mod internal {
         let ts: TokenStream = src.parse().unwrap();
         let mut input: Input = ts.clone().into();
         let val: T = input.parse().unwrap();
-        let out = val.to_token_stream();
 
-        assert!(is!(input.peek(); End));
-        assert_eq!(out.to_string(), ts.to_string());
+        let inn = ts.to_string();
+        let out = val.to_token_stream().to_string();
+
+        tok!(input.peek();
+            End => {},
+            _ @ tt => panic!("parsing was not exhaustive; got {:?}", tt),
+        );
+
+        assert_eq!(&inn, &out);
     }
 
     pub fn deny<T: Parse + Debug>(src: &str, msg: &str) {
@@ -152,6 +184,11 @@ pub mod internal {
         let mut input: Input = ts.into();
         let err = input.parse::<T>().unwrap_err();
 
-        assert!(err.message().contains(msg));
+        assert!(
+            err.message().contains(msg),
+            "`{}` expected; got `{}`",
+            msg,
+            err.message()
+        );
     }
 }

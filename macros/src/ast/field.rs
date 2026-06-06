@@ -34,3 +34,13 @@ impl Parse for Field {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    tst!(Field {
+        with_ty: "0.0;0 foo : T" Ok,
+        without_ty: "0.0;0 foo" Ok,
+    });
+}

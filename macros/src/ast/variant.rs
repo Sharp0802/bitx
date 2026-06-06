@@ -23,3 +23,12 @@ impl Parse for Variant {
         Ok(Self { attr, name, values })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    tst!(Variant {
+        no_arrow: "0 Foo" Err("`=>`"),
+    });
+}

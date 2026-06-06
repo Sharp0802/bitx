@@ -51,20 +51,29 @@ impl Values {
     }
 
     pub fn bounds(&self) -> Result<Value, Vec<Value>> {
-        if self.0.len() == 1 {
+        if self.is_empty() {
             Ok(Value {
-                start: self.0[0].start,
-                end: self.0[self.0.len() - 1].end,
+                start: 0,
+                end: u128::MAX,
             })
+        } else if self.0.len() == 1 {
+            Ok(self.0[0])
         } else {
-            Err(self
-                .0
-                .windows(2)
-                .map(|pair| Value {
-                    start: pair[0].end + 1,
-                    end: pair[1].start - 1,
-                })
-                .collect())
+            // NOTE: we cannot assume it's already merged.
+            let merged: Self = self.0.clone().into();
+
+            if merged.0.len() == 1 {
+                Ok(merged.0[0])
+            } else {
+                Err(merged
+                    .0
+                    .windows(2)
+                    .map(|pair| Value {
+                        start: pair[0].end + 1,
+                        end: pair[1].start - 1,
+                    })
+                    .collect())
+            }
         }
     }
 
@@ -103,6 +112,11 @@ impl Values {
 
 impl Display for Values {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.0.is_empty() {
+            write!(f, "_")?;
+            return Ok(());
+        }
+
         for i in 0..(3.min(self.0.len())) {
             if i > 0 {
                 write!(f, " | ")?;
@@ -143,5 +157,52 @@ impl From<Vec<Value>> for Values {
         merged.push(buffer);
 
         Self(merged)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    tst!(Values {
+        empty: "_" @|val| {
+            assert!(val.is_empty());
+            assert_eq!(val.to_string(), "_");
+            assert_eq!(val.bounds(), Ok(Value { start: 0, end: u128::MAX }));
+        },
+        single: "1..=1" @|val| {
+            assert_eq!(val.point(), Some(1));
+            assert_eq!(val.to_string(), "0x1");
+            assert_eq!(val.bounds(), Ok(Value { start: 1, end: 1 }));
+            assert!(Values::no_overlap(val.0).is_ok());
+        },
+        multi: "1 | 2" @|val| {
+            assert_eq!(val.point(), None);
+            assert_eq!(val.to_string(), "0x1 | 0x2");
+            assert_eq!(val.bounds(), Ok(Value { start: 1, end: 2 }));
+            assert!(Values::no_overlap(val.0).is_ok());
+        },
+        gaps: "1 | 3..4 | 4..5" @|val| {
+            assert_eq!(val.bounds(), Err(vec![ Value { start: 2, end: 2 } ]));
+            assert!(Values::no_overlap(val.0).is_ok());
+        },
+        overlap: "1 | 1" @|val| {
+            assert!(Values::no_overlap(val.0).is_err());
+        },
+        long: "1 | 2 | 3 | 4" Display("0x1 | 0x2 | 0x3 | ..."),
+        iter: "1 | 2" @|val| {
+            let mut iter = val.iter();
+            assert_eq!(iter.next(), Some(&Value { start: 1, end: 1 }));
+            assert_eq!(iter.next(), Some(&Value { start: 2, end: 2 }));
+            assert_eq!(iter.next(), None);
+        },
+    });
+
+    #[test]
+    fn test_from_trivials() {
+        let unit = Value { start: 1, end: 1 };
+
+        assert_eq!(Values::from(vec![]).0, vec![]);
+        assert_eq!(Values::from(vec![unit]).0, vec![unit]);
     }
 }
