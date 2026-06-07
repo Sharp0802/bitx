@@ -89,113 +89,32 @@ impl Parse for Layout {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_dec() {
-        let ts = quote!(1.2 ; 16);
-        let mut input = Input::from(ts);
-        let layout: Layout = input.parse().unwrap();
+    tst!(Layout {
+        dec: "1.2 ; 16" @|val| {
+            assert_eq!(val.offset, 10);
+            assert_eq!(val.size, 16);
+        },
+        hex: "0x1.0;0x10" @|val| {
+            assert_eq!(val.offset, 8);
+            assert_eq!(val.size, 16);
+        },
+        oct: "0o1.0;0o20" @|val| {
+            assert_eq!(val.offset, 8);
+            assert_eq!(val.size, 16);
+        },
+        bin: "0b10.1;0b11" @|val| {
+            assert_eq!(val.offset, 17);
+            assert_eq!(val.size, 3);
+        },
 
-        assert_eq!(layout.offset, 10);
-        assert_eq!(layout.size, 16);
-    }
-
-    #[test]
-    fn test_hex() {
-        let ts: TokenStream = "0x1.0;0x10".parse().unwrap();
-        let mut input: Input = ts.into();
-        let layout: Layout = input.parse().unwrap();
-
-        assert_eq!(layout.offset, 8);
-        assert_eq!(layout.size, 16);
-    }
-
-    #[test]
-    fn test_oct() {
-        let ts: TokenStream = "0o1.0;0o20".parse().unwrap();
-        let mut input: Input = ts.into();
-        let layout: Layout = input.parse().unwrap();
-
-        assert_eq!(layout.offset, 8);
-        assert_eq!(layout.size, 16);
-    }
-
-    #[test]
-    fn test_bin() {
-        let ts: TokenStream = "0b10.1;0b11".parse().unwrap();
-        let mut input: Input = ts.into();
-        let layout: Layout = input.parse().unwrap();
-
-        assert_eq!(layout.offset, 17);
-        assert_eq!(layout.size, 3);
-    }
-
-    #[test]
-    fn test_too_big_bit_offset() {
-        let mut input: Input = quote!(1.8 ; 16).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_missing_semicolon() {
-        let mut input: Input = quote!(1.2 16).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_no_literal_first() {
-        let mut input: Input = quote!(foo ; 16).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_no_dot_after_prefix() {
-        let mut input: Input = quote!(0x1 ; 16).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_no_literal_after_dot() {
-        let ts: TokenStream = "1 . foo ; 16".parse().unwrap();
-        let mut input: Input = ts.into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_byte_suffix() {
-        let ts: TokenStream = "1.0f32 ; 16".parse().unwrap();
-        let mut input: Input = ts.into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_bit_suffix() {
-        let ts: TokenStream = "1f32.0 ; 16".parse().unwrap();
-        let mut input: Input = ts.into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_size_suffix() {
-        let ts: TokenStream = "1.0 ; 16f32".parse().unwrap();
-        let mut input: Input = ts.into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_nan_byte_offset() {
-        let mut input: Input = quote!(bar . 2 ; 1).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_nan_bit_offset() {
-        let mut input: Input = quote!(1 . bar ; 1).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
-
-    #[test]
-    fn test_nan_size() {
-        let mut input: Input = quote!(1.2 ; bar).into();
-        assert!(input.parse::<Layout>().is_err());
-    }
+        big_bit_offset: "1.8 ; 16" Err,
+        invalid_byte: "foo ; 16" Err,
+        missing_dot: "0x1 ; 16" Err,
+        invalid_bit: "1 . foo ; 16" Err,
+        missing_semicolon: "1.2 16" Err,
+        invalid_size: "1.0 ; foo" Err,
+        bit_suffix: "1.0u8 ; 4u8" Err,
+        byte_suffix: "1u8.0 ; 4u8" Err,
+        size_suffix: "1.0 ; 4u8" Err,
+    });
 }
