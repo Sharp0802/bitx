@@ -1,0 +1,5 @@
+error: zero size field is not allowed
+ --> tests/ui/field.too_small.rs:5:19
+  |
+5 |         0.1;0 pub field,
+  |                   ^^^^^
