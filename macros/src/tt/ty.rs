@@ -4,7 +4,6 @@ use crate::tt::{Error, Input, Parse};
 #[derive(Debug, Clone)]
 pub struct Type(TokenStream);
 
-// NOTE: maximum length of 32-bit unsigned integer is 10 in base 10.
 #[inline]
 const fn itoa(buffer: &mut [u8; 11], mut size: u32) -> &str {
     buffer[0] = b'u';
@@ -21,11 +20,20 @@ const fn itoa(buffer: &mut [u8; 11], mut size: u32) -> &str {
 
     // SAFETY: 1. b'u' is a valid ASCII.
     //         2. b'0' + x (where 0 <= x < 10) is a valid ASCII.
-    let Ok(str) = core::str::from_utf8(slice) else {
-        unreachable!();
-    };
 
-    str
+    #[cfg(coverage)]
+    unsafe {
+        // NOTE: unsafe variant is required;
+        //       there is no way to exclude specific block from coverage currently.
+        //       ideally, those two block should be same by LLVM.
+        core::str::from_utf8_unchecked(slice)
+    }
+
+    #[cfg(not(coverage))]
+    match core::str::from_utf8(slice) {
+        Ok(str) => str,
+        Err(_) => unreachable!(),
+    }
 }
 
 impl Type {

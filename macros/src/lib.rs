@@ -1,4 +1,5 @@
 #![expect(missing_docs, reason = "will be documented in bitx crate")]
+#![cfg_attr(coverage_nightly, feature(coverage_attribute))]
 
 mod ast;
 mod cg;

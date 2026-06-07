@@ -23,6 +23,10 @@ trybuild = "1.0"
 missing_docs = "warn"
 unused_results = "deny"
 
+[workspace.lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ["cfg(coverage_nightly)", "cfg(coverage)"]
+
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 nursery = { level = "warn", priority = -1 }
