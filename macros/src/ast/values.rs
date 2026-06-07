@@ -135,6 +135,8 @@ impl Display for Values {
 
 impl From<Vec<Value>> for Values {
     fn from(mut raw: Vec<Value>) -> Self {
+        // NOTE: llvm-cov cannot reach to unreachable region if early return.
+        #[cfg(not(coverage))]
         if raw.len() <= 1 {
             return Self(raw);
         }
@@ -144,7 +146,14 @@ impl From<Vec<Value>> for Values {
         let mut merged = Vec::with_capacity(raw.len());
 
         let mut iter = raw.into_iter();
+
+        #[cfg(not(coverage))]
         let mut buffer = iter.next().unwrap_or_else(|| unreachable!());
+
+        #[cfg(coverage)]
+        let Some(mut buffer) = iter.next() else {
+            return Self(Vec::new());
+        };
 
         for item in iter {
             if buffer.adjoin(&item) {
